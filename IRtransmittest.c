@@ -12,45 +12,54 @@
 
 volatile XUSARTst serialStruct;
 volatile int is1;
+volatile int isOn;
 volatile int temp;
 
 ISR(TCC1_OVF_vect)
 {
-	/* for when we use serial
-	TCC0_CTRLA = TC_CLKSEL_OFF_gc;
-	TCC1_CTRLA = TC_CLKSEL_OFF_gc;
-	*/
-	
+	/*
 	//repeatedly send 1's
-	if(TCC1_PER == 600)
+	if(TCC1_PER == 600 && is1)
 	{
 		TCC0_CTRLA = TC_CLKSEL_OFF_gc;
 		TCC1_PER = 300;
 	}
-	else
+	else if(is1)
 	{
 		TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
 		TCC1_PER = 600;
 	}
+	//repeatedly send 0's
+	if(!is1 && isOn)
+	{
+		TCC0_CTRLA = TC_CLKSEL_OFF_gc;
+		isOn = 0; //false
+	}
+	else if(!is1)
+	{
+		TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
+		isOn = 1; //true
+	}*/
+	
+	TCC0_CTRLA = TC_CLKSEL_OFF_gc;
+	TCC1_CTRLA = TC_CLKSEL_OFF_gc;
 }
 
-ISR(USARTE0_TXC_vect)
+ISR(USARTE1_TXC_vect)
 {
 	Tx_Handler(&serialStruct);
 }
 
-ISR(USARTE0_RXC_vect)
+ISR(USARTE1_RXC_vect)
 {
 	Rx_Handler(&serialStruct);
 }
 
 ISR(PORTF_INT0_vect)
 {
-	/* for when we use serial
 	USART_send(&serialStruct, "A falling edge was detected.");
-	*/
 	
-	PORTH_OUT = ++temp;
+	//PORTH_OUT = ++temp;
 }
 
 
@@ -59,6 +68,7 @@ void main(void)
 	unsigned long sClk, pClk;
 	char recieveString[100];
 	is1 = 0; //false
+	isOn = 0; //false
 	temp = 0;
 	
 	cli(); //
@@ -116,20 +126,20 @@ void main(void)
 	/*
 	* Serial set up
 	*/
-	//initialize the usart e0 for 57600 baud with 8 data bits, no parity, and 1 stop bit, interrpts on low (porth set to this for debugging purposes)
-	PORTH_OUT = USART_init(&serialStruct, 0xE0, pClk, (_USART_RXCIL_MED | _USART_TXCIL_MED), 576, -4, _USART_CHSZ_8BIT, _USART_PM_DISABLED, _USART_SM_1BIT);
+	//initialize the usart e0 for 57600 baud with 8 data bits, no parity, and 1 stop bit, interrupts on low (porth set to this for debugging purposes)
+	PORTH_OUT = USART_init(&serialStruct, 0xE1, pClk, (_USART_RXCIL_MED | _USART_TXCIL_MED), 576, -4, _USART_CHSZ_8BIT, _USART_PM_DISABLED, _USART_SM_1BIT);
 	USART_buffer_init(&serialStruct, 100, 100); //initialize the circular buffers
 	USART_enable(&serialStruct, USART_TXEN_bm | USART_RXEN_bm); //enable the USART
 	serialStruct.fOutMode = _OUTPUT_CRLF; //append a carriage return and a line feed to every output.
-	serialStruct.fInMode = _INPUT_CR | _INPUT_TTY; //echo input back to the terminal and set up for keyboard input.
+	serialStruct.fInMode = _INPUT_CR | _INPUT_TTY | _INPUT_ECHO; //echo input back to the terminal and set up for keyboard input.
 	
 	/*
 	* Port F configuration
 	*/
-	PORTF_DIR = 0x00; //input dir for all pins
+	PORTF_DIR = 0x00; //all pins as input
 	PORTF_INTCTRL = 0x01; //turn on interrupt 0 with a low priority
-	PORTF_INT0MASK = 0x01; //mask so that only pin 0 can fire an interrupt;
-	PORTF_PIN0CTRL = 0x02; //set pin 0 to detect a falling edge as the receiver is active low.
+	PORTF_INT0MASK = 0x04; //mask so that only pin 0 can fire an interrupt;
+	PORTF_PIN2CTRL = 0x02; //set pin 0 to detect a falling edge as the receiver is active low.*/
 	
 	sei();
 		
@@ -154,6 +164,7 @@ void main(void)
 				TCC1_CTRLA = TC_CLKSEL_DIV64_gc;
 				USART_send(&serialStruct, "Sending a 1");
 				is1 = 1; //true
+				isOn = 1; //true
 				break;
 			}
 		}		
