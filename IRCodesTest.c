@@ -77,6 +77,7 @@ ISR(PORTF_INT0_vect)
 		edgeFlag = 1; //true
 		timeoutFlag = 0;//false
 		pollFlag = 0;//false
+		PORTH_OUT = 0x00;
 		
 		//start the timers!
 		TCF0_CTRLA = TC_CLKSEL_DIV64_gc;
@@ -116,11 +117,29 @@ ISR(TCF1_OVF_vect)
 	if(PORTF_IN == 0x04)
 	{
 		USART_send(&serialStruct, "A 0 has been detected.");
+		PORTH_OUT = 0x01; //for when we do not have serial
 	}
 	else
 	{
 		USART_send(&serialStruct, "A 1 has been detected.");
+		PORTH_OUT = 0x02; //for when we do not have serial
 	}	
+}
+
+//pushbutton equivalent to entering a 0 on serial.
+ISR(PORTJ_INT0_vect)
+{
+	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
+	TCC1_PER = 300;
+	TCC1_CTRLA = TC_CLKSEL_DIV64_gc;	
+}
+
+//pushbutton equiaveltn to entering a 1 on serial.
+ISR(PORTJ_INT1_vect)
+{
+	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
+	TCC1_PER = 600;
+	TCC1_CTRLA = TC_CLKSEL_DIV64_gc;	
 }
 
 
@@ -225,6 +244,16 @@ void main(void)
 	PORTF_INTCTRL = 0x01; //turn on interrupt 0 with a low priority
 	PORTF_INT0MASK = 0x04; //mask so that only pin 0 can fire an interrupt
 	PORTF_PIN2CTRL = 0x00; //set pin 0 to detect a rising and falling edges
+	
+	/*
+	* Port J configuration
+	*/
+	PORTJ_DIR = 0x00;
+	PORTJ_INTCTRL = 0x05;
+	PORTJ_PIN0CTRL = 0x01;
+	PORTJ_PIN1CTRL = 0x01;
+	PORTJ_INT0MASK = 0x01;
+	PORTJ_INT1MASK = 0x02;
 	
 	sei();
 		
