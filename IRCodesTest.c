@@ -17,43 +17,42 @@ volatile int temp;
 volatile int edgeFlag;
 volatile int timeoutFlag;
 volatile int pollFlag;
+volatile int accum;
 
-ISR(TCC1_OVF_vect)
+/*
+* This ISR is used to handle when to turn off the TCCA
+* accum is used as an accumulator value. At the 39.55khz this
+* modulates we need approx 24 periods of oscillation for a 1 and
+* approximately 12 period of oscillation for a 0. The accumulator
+* value lets us achieve this.
+*/
+ISR(TCC0_CCA_vect)
 {
-	/*
-	//repeatedly send 1's
-	if(TCC1_PER == 600 && is1)
+	if(is1 && accum == 24)
 	{
 		TCC0_CTRLA = TC_CLKSEL_OFF_gc;
-		TCC1_PER = 300;
+		PORTC_OUT &= ~0x01;
+		accum = 0;
 	}
-	else if(is1)
-	{
-		TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
-		TCC1_PER = 600;
-	}
-	//repeatedly send 0's
-	if(!is1 && isOn)
+	else if(!is1 && accum == 12)
 	{
 		TCC0_CTRLA = TC_CLKSEL_OFF_gc;
-		isOn = 0; //false
+		PORTC_OUT &= ~0x01;
+		accum = 0;
 	}
-	else if(!is1)
+	else
 	{
-		TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
-		isOn = 1; //true
-	}*/
+		++accum;
+	}
 	
-	TCC0_CTRLA = TC_CLKSEL_OFF_gc;
-	TCC1_CTRLA = TC_CLKSEL_OFF_gc;
 }
 
-ISR(USARTE1_TXC_vect)
+ISR(USARTD0_TXC_vect)
 {
 	Tx_Handler(&serialStruct);
 }
 
-ISR(USARTE1_RXC_vect)
+ISR(USARTD0_RXC_vect)
 {
 	Rx_Handler(&serialStruct);
 }
@@ -80,15 +79,29 @@ ISR(PORTF_INT0_vect)
 		PORTH_OUT = 0x00;
 		
 		//start the timers!
-		TCF0_CTRLA = TC_CLKSEL_DIV64_gc;
-		TCF1_CTRLA = TC_CLKSEL_DIV64_gc;
+		TCF0_INTCTRLA = 0x01;
+		TCF0_CNT = 0x00;
+		TCF1_INTCTRLA = 0x01;
+		TCF1_CNT = 0x00;
 	}
 	//we have not run out of time to receive the next pulse
 	if(edgeFlag && !timeoutFlag)
 	{
-		//stop the timout timer
-		TCF0_CTRLA = TC_CLKSEL_OFF_gc;
+		//stop the timeout timer
+		TCF0_INTCTRLA = 0x00;
 		edgeFlag = 0; //false
+		
+		if(pollFlag)
+		{
+			//we have detected a 1
+			pollFlag = 0;
+			PORTH_OUT = 0x01;
+		}
+		else
+		{
+			//we have detected a 0
+			PORTH_OUT = 0x00;
+		}			
 	}	
 }
 
@@ -100,10 +113,10 @@ ISR(PORTF_INT0_vect)
 */
 ISR(TCF0_OVF_vect)
 {
-	TCF0_CTRLA = TC_CLKSEL_OFF_gc;
+	TCF0_INTCTRLA = 0x00;
 	timeoutFlag = 1; //true
 	edgeFlag = 0; //false
-	pollFlag = 0; //false	
+	pollFlag = 0; //false
 }
 
 /*
@@ -112,36 +125,9 @@ ISR(TCF0_OVF_vect)
 */
 ISR(TCF1_OVF_vect)
 {
-	TCF1_CTRLA = TC_CLKSEL_OFF_gc;
-	//if pin 2 is high.
-	if(PORTF_IN == 0x04)
-	{
-		USART_send(&serialStruct, "A 0 has been detected.");
-		PORTH_OUT = 0x01; //for when we do not have serial
-	}
-	else
-	{
-		USART_send(&serialStruct, "A 1 has been detected.");
-		PORTH_OUT = 0x02; //for when we do not have serial
-	}	
+	TCF1_INTCTRLA = 0x00;
+	pollFlag = 1; //true	
 }
-
-//pushbutton equivalent to entering a 0 on serial.
-ISR(PORTJ_INT0_vect)
-{
-	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
-	TCC1_PER = 300;
-	TCC1_CTRLA = TC_CLKSEL_DIV64_gc;	
-}
-
-//pushbutton equiaveltn to entering a 1 on serial.
-ISR(PORTJ_INT1_vect)
-{
-	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
-	TCC1_PER = 600;
-	TCC1_CTRLA = TC_CLKSEL_DIV64_gc;	
-}
-
 
 void main(void)
 {
@@ -150,6 +136,7 @@ void main(void)
 	is1 = 0; //false
 	isOn = 0; //false
 	temp = 0;
+	accum = 0;
 	
 	cli(); //
 	
@@ -173,46 +160,32 @@ void main(void)
 	TCC0_CTRLD = 0x00; //turn off events
 	TCC0_CTRLE = 0x00; //turn off byte mode
 	TCC0_PER = 12; //set the top of the period
-	TCC0_CCA = 6; //set the compare register value to achieve 50% duty cycle at start
-	
-	/*
-	* Timer port C1 configuration
-	* This timer is used to turn the PWM on and off as to replicate 1's and 0's
-	* The standard requires that a 1 be represented with 1.2ms of 38Khz oscillating signal followed by
-	* .6ms of no signal. A 0 is represented with .6ms of 38Khz oscillating signal followed by .6ms of
-	* no signal.
-	*/
-	TCC1_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially until serial input happens.
-	TCC1_CTRLB = TC_WGMODE_NORMAL_gc; //set waveform generation mode to normal
-	TCC1_CTRLC = 0x00; //turn off compares
-	TCC1_CTRLD = 0x00; //turn off events
-	TCC1_CTRLE = 0x00; //turn off byte mode
-	TCC1_PER = 600; //set the top of the period to overflow at 1.2ms. NOTE: to get .6ms set this to 300.
-	TCC1_INTCTRLA = 0x01; //set timer c1 overflow interrupts to low level
+	TCC0_CCA = 6; //set the compare register value to achieve 50% duty cycle at 
+	TCC0_INTCTRLB = 0x01; //set the CCA interrupt to low priority.
 	
 	/*
 	* Timer port F0 configuration
 	* use this timer as the 1200 microsecond receive time out check.
 	*/
-	TCF0_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially until a edge is detected
+	TCF0_CTRLA = TC_CLKSEL_DIV64_gc; //set timer to be off intially until a edge is detected
 	TCF0_CTRLB = TC_WGMODE_NORMAL_gc; //set waveform generation mode to normal
 	TCF0_CTRLC = 0x00; //turn off compares
 	TCF0_CTRLD = 0x00; //turn off events
 	TCF0_CTRLE = 0x00; //turn off byte mode
 	TCF0_PER = 600; //set the top of the period to overflow at 1.2ms. NOTE: to get .6ms set this to 300.
-	TCF0_INTCTRLA = 0x01; //set timer f0 overflow interrupts to low level
+	TCF0_INTCTRLA = 0x00; //set timer f0 overflow interrupts to low level
 	
 	/*
 	* Timer port F1 configuration
 	* use this timer for the 900 microsecond level check.
 	*/
-	TCF1_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially until a edge is detected.
+	TCF1_CTRLA = TC_CLKSEL_DIV64_gc; //set timer to be off intially until a edge is detected.
 	TCF1_CTRLB = TC_WGMODE_NORMAL_gc; //set waveform generation mode to normal
 	TCF1_CTRLC = 0x00; //turn off compares
 	TCF1_CTRLD = 0x00; //turn off events
 	TCF1_CTRLE = 0x00; //turn off byte mode
 	TCF1_PER = 450; //set the top of the period to overflow at .9ms.
-	TCF1_INTCTRLA = 0x01; //set timer c1 overflow interrupts to low level
+	TCF1_INTCTRLA = 0x00; //set timer f1 overflow interrupts to low level
 	
 	/*
 	* Port C configuration
@@ -225,13 +198,13 @@ void main(void)
 	* Just turn off LED's
 	*/
 	PORTH_DIR = 0xFF; //output dir for all pins
-	PORTH_OUT = 0x00;
+	PORTH_OUT = 0xFF;
 	
 	/*
 	* Serial set up
 	*/
-	//initialize the usart e0 for 57600 baud with 8 data bits, no parity, and 1 stop bit, interrupts on low (porth set to this for debugging purposes)
-	PORTH_OUT = USART_init(&serialStruct, 0xE1, pClk, (_USART_RXCIL_MED | _USART_TXCIL_MED), 576, -4, _USART_CHSZ_8BIT, _USART_PM_DISABLED, _USART_SM_1BIT);
+	//initialize the usart d0 for 57600 baud with 8 data bits, no parity, and 1 stop bit, interrupts on low (porth set to this for debugging purposes)
+	PORTH_OUT = USART_init(&serialStruct, 0xD0, pClk, (_USART_RXCIL_LO | _USART_TXCIL_LO), 576, -4, _USART_CHSZ_8BIT, _USART_PM_DISABLED, _USART_SM_1BIT);
 	USART_buffer_init(&serialStruct, 100, 100); //initialize the circular buffers
 	USART_enable(&serialStruct, USART_TXEN_bm | USART_RXEN_bm); //enable the USART
 	serialStruct.fOutMode = _OUTPUT_CRLF; //append a carriage return and a line feed to every output.
@@ -242,19 +215,9 @@ void main(void)
 	*/
 	PORTF_DIR = 0x00; //all pins as input
 	PORTF_INTCTRL = 0x01; //turn on interrupt 0 with a low priority
-	PORTF_INT0MASK = 0x04; //mask so that only pin 0 can fire an interrupt
-	PORTF_PIN2CTRL = 0x00; //set pin 0 to detect a rising and falling edges
-	
-	/*
-	* Port J configuration
-	*/
-	PORTJ_DIR = 0x00;
-	PORTJ_INTCTRL = 0x05;
-	PORTJ_PIN0CTRL = 0x01;
-	PORTJ_PIN1CTRL = 0x01;
-	PORTJ_INT0MASK = 0x01;
-	PORTJ_INT1MASK = 0x02;
-	
+	PORTF_INT0MASK = 0x04; //mask so that only pin 2 can fire an interrupt
+	PORTF_PIN2CTRL = 0x00; //set pin 2 to detect a rising and falling edges
+		
 	sei();
 		
     while(1)
@@ -267,18 +230,13 @@ void main(void)
 			{
 				case '0':
 				TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
-				TCC1_PER = 300;
-				TCC1_CTRLA = TC_CLKSEL_DIV64_gc;
 				USART_send(&serialStruct, "Sending a 0");
 				is1 = 0; //false
 				break;
 				case '1':
 				TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
-				TCC1_PER = 600;
-				TCC1_CTRLA = TC_CLKSEL_DIV64_gc;
 				USART_send(&serialStruct, "Sending a 1");
 				is1 = 1; //true
-				isOn = 1; //true
 				break;
 			}
 		}		
