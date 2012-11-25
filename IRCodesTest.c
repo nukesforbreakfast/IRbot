@@ -81,11 +81,11 @@ ISR(PORTJ_INT1_vect)
 }
 
 /*
-* Interrupt for handling capture complete interrupt
+* Interrupt for handling capture complete event
 */
 ISR(TCC1_CCA_vect)
 {
-	PORTH_OUT=TCC1_CCA/580;
+	PORTH_OUT = TCC1_CCA;
 }
 
 void main(void)
@@ -127,8 +127,9 @@ void main(void)
 	*/
 	TCC1_CTRLA = TC_CLKSEL_DIV64_gc; //set clock source sysclk/64= 500KHz
 	TCC1_CTRLB = 0x10 | TC_WGMODE_NORMAL_gc; //turn on capture channel A and set waveform generation mode normal
-	TCC1_CTRLD = 0xC8; //set events to Pulse Width capture, no timer delay, and listen to event channel 0
+	TCC1_CTRLD = 0xC8; //set events to Pulse Width capture, no timer delay, and CCA listens to event channel 0, CCB to 1, etc... see datasheet
 	TCC1_CTRLE = 0x00; //turn off byte mode
+	TCC1_INTCTRLB = 0x01; //set CCA interrupt to low
 	TCC1_PER = 0xFFFF; //set the top of the period to max 16-bit value
 	
 	/*
@@ -142,7 +143,7 @@ void main(void)
 	* Just turn off LED's
 	*/
 	PORTH_DIR = 0xFF; //output dir for all pins
-	PORTH_OUT = 0xFF;
+	PORTH_OUT = 0xF0;
 	
 	/*
 	* Serial set up
@@ -158,8 +159,8 @@ void main(void)
 	* Port F configuration
 	*/
 	PORTF_DIR = 0x00; //all pins as input
-	PORTF_INTCTRL = 0x01; //turn on interrupt 0 with a low priority
-	PORTF_INT0MASK = 0x04; //mask so that only pin 2 can fire an interrupt
+	PORTF_INTCTRL = 0x00; //turn on interrupt 0 with a low priority
+	PORTF_INT0MASK = 0x00; //mask so that only pin 2 can fire an interrupt
 	PORTF_PIN2CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
 	
 	/*
