@@ -79,16 +79,14 @@ ISR(PORTF_INT0_vect)
 		PORTH_OUT = 0x00;
 		
 		//start the timers!
-		TCF0_INTCTRLA = 0x01;
-		TCF0_CNT = 0x00;
-		TCF1_INTCTRLA = 0x01;
-		TCF1_CNT = 0x00;
+		TCF0_CTRLA = TC_CLKSEL_DIV64_gc;
+		TCF1_CTRLA = TC_CLKSEL_DIV64_gc;
 	}
 	//we have not run out of time to receive the next pulse
 	if(edgeFlag && !timeoutFlag)
 	{
 		//stop the timeout timer
-		TCF0_INTCTRLA = 0x00;
+		TCF0_CTRLA = TC_CLKSEL_OFF_gc;
 		edgeFlag = 0; //false
 		
 		if(pollFlag)
@@ -113,7 +111,7 @@ ISR(PORTF_INT0_vect)
 */
 ISR(TCF0_OVF_vect)
 {
-	TCF0_INTCTRLA = 0x00;
+	TCF0_CTRLA = TC_CLKSEL_OFF_gc;
 	timeoutFlag = 1; //true
 	edgeFlag = 0; //false
 	pollFlag = 0; //false
@@ -125,7 +123,7 @@ ISR(TCF0_OVF_vect)
 */
 ISR(TCF1_OVF_vect)
 {
-	TCF1_INTCTRLA = 0x00;
+	TCF1_CTRLA = TC_CLKSEL_OFF_gc;
 	pollFlag = 1; //true	
 }
 
@@ -167,25 +165,25 @@ void main(void)
 	* Timer port F0 configuration
 	* use this timer as the 1200 microsecond receive time out check.
 	*/
-	TCF0_CTRLA = TC_CLKSEL_DIV64_gc; //set timer to be off intially until a edge is detected
+	TCF0_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially until a edge is detected
 	TCF0_CTRLB = TC_WGMODE_NORMAL_gc; //set waveform generation mode to normal
 	TCF0_CTRLC = 0x00; //turn off compares
 	TCF0_CTRLD = 0x00; //turn off events
 	TCF0_CTRLE = 0x00; //turn off byte mode
 	TCF0_PER = 600; //set the top of the period to overflow at 1.2ms. NOTE: to get .6ms set this to 300.
-	TCF0_INTCTRLA = 0x00; //set timer f0 overflow interrupts to low level
+	TCF0_INTCTRLA = 0x01; //set timer f0 overflow interrupts to low level
 	
 	/*
 	* Timer port F1 configuration
 	* use this timer for the 900 microsecond level check.
 	*/
-	TCF1_CTRLA = TC_CLKSEL_DIV64_gc; //set timer to be off intially until a edge is detected.
+	TCF1_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially until a edge is detected.
 	TCF1_CTRLB = TC_WGMODE_NORMAL_gc; //set waveform generation mode to normal
 	TCF1_CTRLC = 0x00; //turn off compares
 	TCF1_CTRLD = 0x00; //turn off events
 	TCF1_CTRLE = 0x00; //turn off byte mode
 	TCF1_PER = 450; //set the top of the period to overflow at .9ms.
-	TCF1_INTCTRLA = 0x00; //set timer f1 overflow interrupts to low level
+	TCF1_INTCTRLA = 0x01; //set timer f1 overflow interrupts to low level
 	
 	/*
 	* Port C configuration
@@ -204,7 +202,7 @@ void main(void)
 	* Serial set up
 	*/
 	//initialize the usart d0 for 57600 baud with 8 data bits, no parity, and 1 stop bit, interrupts on low (porth set to this for debugging purposes)
-	PORTH_OUT = USART_init(&serialStruct, 0xD0, pClk, (_USART_RXCIL_LO | _USART_TXCIL_LO), 576, -4, _USART_CHSZ_8BIT, _USART_PM_DISABLED, _USART_SM_1BIT);
+	USART_init(&serialStruct, 0xD0, pClk, (_USART_RXCIL_LO | _USART_TXCIL_LO), 576, -4, _USART_CHSZ_8BIT, _USART_PM_DISABLED, _USART_SM_1BIT);
 	USART_buffer_init(&serialStruct, 100, 100); //initialize the circular buffers
 	USART_enable(&serialStruct, USART_TXEN_bm | USART_RXEN_bm); //enable the USART
 	serialStruct.fOutMode = _OUTPUT_CRLF; //append a carriage return and a line feed to every output.
@@ -217,6 +215,14 @@ void main(void)
 	PORTF_INTCTRL = 0x01; //turn on interrupt 0 with a low priority
 	PORTF_INT0MASK = 0x04; //mask so that only pin 2 can fire an interrupt
 	PORTF_PIN2CTRL = 0x00; //set pin 2 to detect a rising and falling edges
+	
+	/*
+	* Port J
+	*/
+	/*PORTF_DIR = 0x00; //all pins as input
+	PORTF_INTCTRL = 0x01; //turn on interrupt 0 with a low priority
+	PORTF_INT0MASK = 0x01; //mask so that only pin 1 can fire an interrupt*/
+	
 		
 	sei();
 		
