@@ -127,6 +127,24 @@ ISR(TCF1_OVF_vect)
 	pollFlag = 1; //true	
 }
 
+/*
+* Pushbutton equivalent for sending a 0
+*/
+ISR(PORTJ_INT0_vect)
+{
+	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
+	is1 = 0; //false	
+}
+
+/*
+* Pushbutton equivalent for sending a 1
+*/
+ISR(PORTJ_INT1_vect)
+{
+	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
+	is1 = 1; //true	
+}
+
 void main(void)
 {
 	unsigned long sClk, pClk;
@@ -217,11 +235,14 @@ void main(void)
 	PORTF_PIN2CTRL = 0x00; //set pin 2 to detect a rising and falling edges
 	
 	/*
-	* Port J
+	* Port J configuration
 	*/
-	/*PORTF_DIR = 0x00; //all pins as input
-	PORTF_INTCTRL = 0x01; //turn on interrupt 0 with a low priority
-	PORTF_INT0MASK = 0x01; //mask so that only pin 1 can fire an interrupt*/
+	PORTJ_DIR = 0x00;
+	PORTJ_INTCTRL = 0x05;
+	PORTJ_PIN0CTRL = 0x01;
+	PORTJ_PIN1CTRL = 0x01;
+	PORTJ_INT0MASK = 0x01;
+	PORTJ_INT1MASK = 0x02;
 	
 		
 	sei();
