@@ -14,9 +14,6 @@ volatile XUSARTst serialStruct;
 volatile int is1;
 volatile int isOn;
 volatile int temp;
-volatile int edgeFlag;
-volatile int timeoutFlag;
-volatile int pollFlag;
 volatile int accum;
 
 /*
@@ -47,84 +44,20 @@ ISR(TCC0_CCA_vect)
 	
 }
 
+/*
+* Serial transmit interrupt handler
+*/
 ISR(USARTD0_TXC_vect)
 {
 	Tx_Handler(&serialStruct);
 }
 
+/*
+* Serial receive interrupt handler
+*/
 ISR(USARTD0_RXC_vect)
 {
 	Rx_Handler(&serialStruct);
-}
-
-/*
-*Use this to handle the 0 or 1 detection using the following scheme:
-*at the first falling edge detected start two timers, one for 1200
-*microseconds and one for 900 microseconds. If another edge is not
-*detected(high or low) within 1200 microseconds abort the receive. At the expiration
-*of the 900 microseconds poll the input. If it is high, we have been sent
-*a 0, if it is low, we have been sent a 1. Repeat for each new edge detected.
-*/
-ISR(PORTF_INT0_vect)
-{
-	/*
-	* An edge was detected!
-	* Start the timers, mark that we have received an edge.
-	*/		
-	if(!edgeFlag)
-	{
-		edgeFlag = 1; //true
-		timeoutFlag = 0;//false
-		pollFlag = 0;//false
-		PORTH_OUT = 0x00;
-		
-		//start the timers!
-		TCF0_CTRLA = TC_CLKSEL_DIV64_gc;
-		TCF1_CTRLA = TC_CLKSEL_DIV64_gc;
-	}
-	//we have not run out of time to receive the next pulse
-	if(edgeFlag && !timeoutFlag)
-	{
-		//stop the timeout timer
-		TCF0_CTRLA = TC_CLKSEL_OFF_gc;
-		edgeFlag = 0; //false
-		
-		if(pollFlag)
-		{
-			//we have detected a 1
-			pollFlag = 0;
-			PORTH_OUT = 0x01;
-		}
-		else
-		{
-			//we have detected a 0
-			PORTH_OUT = 0x00;
-		}			
-	}	
-}
-
-/*
-* Timeout timer interrupt vector
-* If this overflows we have not detected an edge within
-* 1200 microseconds of the first edge! Reset edge flag to false
-* set timeout flag to true;
-*/
-ISR(TCF0_OVF_vect)
-{
-	TCF0_CTRLA = TC_CLKSEL_OFF_gc;
-	timeoutFlag = 1; //true
-	edgeFlag = 0; //false
-	pollFlag = 0; //false
-}
-
-/*
-* Polling timer interrupt vector
-* If this overflows it is time to poll!
-*/
-ISR(TCF1_OVF_vect)
-{
-	TCF1_CTRLA = TC_CLKSEL_OFF_gc;
-	pollFlag = 1; //true	
 }
 
 /*
@@ -145,6 +78,14 @@ ISR(PORTJ_INT1_vect)
 	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
 	is1 = 1; //true	
 	PORTH_OUT = 0x01;
+}
+
+/*
+* Interrupt for handling capture complete interrupt
+*/
+ISR(TCC1_CCA_vect)
+{
+	PORTH_OUT=TCC1_CCA/580;
 }
 
 void main(void)
@@ -182,28 +123,13 @@ void main(void)
 	TCC0_INTCTRLB = 0x01; //set the CCA interrupt to low priority.
 	
 	/*
-	* Timer port F0 configuration
-	* use this timer as the 1200 microsecond receive time out check.
+	* Timer C1 configuration
 	*/
-	TCF0_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially until a edge is detected
-	TCF0_CTRLB = TC_WGMODE_NORMAL_gc; //set waveform generation mode to normal
-	TCF0_CTRLC = 0x00; //turn off compares
-	TCF0_CTRLD = 0x00; //turn off events
-	TCF0_CTRLE = 0x00; //turn off byte mode
-	TCF0_PER = 600; //set the top of the period to overflow at 1.2ms. NOTE: to get .6ms set this to 300.
-	TCF0_INTCTRLA = 0x01; //set timer f0 overflow interrupts to low level
-	
-	/*
-	* Timer port F1 configuration
-	* use this timer for the 900 microsecond level check.
-	*/
-	TCF1_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially until a edge is detected.
-	TCF1_CTRLB = TC_WGMODE_NORMAL_gc; //set waveform generation mode to normal
-	TCF1_CTRLC = 0x00; //turn off compares
-	TCF1_CTRLD = 0x00; //turn off events
-	TCF1_CTRLE = 0x00; //turn off byte mode
-	TCF1_PER = 450; //set the top of the period to overflow at .9ms.
-	TCF1_INTCTRLA = 0x01; //set timer f1 overflow interrupts to low level
+	TCC1_CTRLA = TC_CLKSEL_DIV64_gc; //set clock source sysclk/64= 500KHz
+	TCC1_CTRLB = 0x10 | TC_WGMODE_NORMAL_gc; //turn on capture channel A and set waveform generation mode normal
+	TCC1_CTRLD = 0xC8; //set events to Pulse Width capture, no timer delay, and listen to event channel 0
+	TCC1_CTRLE = 0x00; //turn off byte mode
+	TCC1_PER = 0xFFFF; //set the top of the period to max 16-bit value
 	
 	/*
 	* Port C configuration
@@ -234,17 +160,23 @@ void main(void)
 	PORTF_DIR = 0x00; //all pins as input
 	PORTF_INTCTRL = 0x01; //turn on interrupt 0 with a low priority
 	PORTF_INT0MASK = 0x04; //mask so that only pin 2 can fire an interrupt
-	PORTF_PIN2CTRL = 0x00; //set pin 2 to detect a rising and falling edges
+	PORTF_PIN2CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
 	
 	/*
 	* Port J configuration
 	*/
-	PORTJ_DIR = 0x00;
-	PORTJ_INTCTRL = 0x05;
-	PORTJ_PIN0CTRL = 0x01;
-	PORTJ_PIN1CTRL = 0x01;
-	PORTJ_INT0MASK = 0x01;
-	PORTJ_INT1MASK = 0x02;
+	PORTJ_DIR = 0x00; //all pins as input
+	PORTJ_INTCTRL = 0x05; //turn on both interrupts to low
+	PORTJ_PIN0CTRL = 0x01; //set pin 0 so only rising edges trigger
+	PORTJ_PIN1CTRL = 0x01; //set pin 1 so only rising edges trigger
+	PORTJ_INT0MASK = 0x01; //mask interrupt 0 to only be fired by pin 0
+	PORTJ_INT1MASK = 0x02; //mask interrupt 1 to only be fired by pin 1
+	
+	/*
+	* Event System Configuration
+	*/
+	EVSYS_CH0MUX = EVSYS_CHMUX_PORTF_PIN2_gc; //set the event system to send events generated from PortF pin 2 to channel 0
+	EVSYS_CH0CTRL = 0x00; //turn off sample filtering
 	
 		
 	sei();
