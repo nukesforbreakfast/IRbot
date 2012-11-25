@@ -133,7 +133,8 @@ ISR(TCF1_OVF_vect)
 ISR(PORTJ_INT0_vect)
 {
 	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
-	is1 = 0; //false	
+	is1 = 0; //false
+	PORTH_OUT = 0x00;	
 }
 
 /*
@@ -143,6 +144,7 @@ ISR(PORTJ_INT1_vect)
 {
 	TCC0_CTRLA = TC_CLKSEL_DIV64_gc;
 	is1 = 1; //true	
+	PORTH_OUT = 0x01;
 }
 
 void main(void)
