@@ -9,12 +9,14 @@
 #include <avr/interrupt.h>
 #include <avr/AVRXlib/AVRX_Clocks.h>
 #include <avr/AVRXlib/AVRX_Serial.h>
+#include <stdlib.h>
 
 volatile XUSARTst serialStruct;
 volatile int is1;
 volatile int isOn;
 volatile int temp;
 volatile int accum;
+volatile int isCapture;
 
 /*
 * This ISR is used to handle when to turn off the TCCA
@@ -86,16 +88,19 @@ ISR(PORTJ_INT1_vect)
 ISR(TCC1_CCA_vect)
 {
 	PORTH_OUT = TCC1_CCA;
+	isCapture = 1; //true
 }
 
 void main(void)
 {
 	unsigned long sClk, pClk;
 	char recieveString[100];
+	char captureString[100];
 	is1 = 0; //false
 	isOn = 0; //false
 	temp = 0;
 	accum = 0;
+	isCapture = 0; //false
 	
 	cli(); //
 	
@@ -154,6 +159,11 @@ void main(void)
 	USART_enable(&serialStruct, USART_TXEN_bm | USART_RXEN_bm); //enable the USART
 	serialStruct.fOutMode = _OUTPUT_CRLF; //append a carriage return and a line feed to every output.
 	serialStruct.fInMode = _INPUT_CR | _INPUT_TTY | _INPUT_ECHO; //echo input back to the terminal and set up for keyboard input.
+	/*
+	* PortQ setup, needed for serial via usb on the green board
+	*/
+	PORTQ_DIR = 0x0F; //port q lower 3 bits control access to usb and other stuff so get access with these two lines
+	PORTQ_OUT = 0x05; //if using port F make this hex 5. Otherwise, use hex 7 to get access to everything.
 	
 	/*
 	* Port F configuration
@@ -201,7 +211,14 @@ void main(void)
 				is1 = 1; //true
 				break;
 			}
-		}		
+		}
+		
+		if(isCapture)
+		{
+			itoa(TCC1_CCA, captureString, 10);
+			USART_send(&serialStruct, captureString);
+			isCapture = 0; //false
+		}					
     }
 
 }
