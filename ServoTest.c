@@ -14,6 +14,7 @@
 volatile XUSARTst serialStruct;
 volatile int setInt;
 volatile int setFlag;
+volatile int turn;
 volatile char receiveString[100];
 volatile char sendString[100];
 
@@ -32,7 +33,7 @@ ISR(USARTD0_TXC_vect)
 */
 ISR(PORTJ_INT0_vect)
 {
-	if(!(TCE0_CCA >= 1200))
+	if(!(TCE0_CCA >= 1150))
 	{
 		TCE0_CCA += 100;
 		setInt = TCE0_CCA;
@@ -55,11 +56,46 @@ ISR(PORTJ_INT1_vect)
 	}		
 }
 
+/*
+* TCE0_CCA interrupt vector
+*/
+ISR(TCE0_CCA_vect)
+{
+	if(turn) //if its true that we need to turn back the other way
+	{
+		if(!(TCE0_CCA <= 350)) //make sure we aren't going under the minimum value
+		{
+			TCE0_CCA -= 10;
+			//setInt = TCE0_CCA;
+			//setFlag = 1; //true
+			PORTH_OUT = TCE0_CCA/10;
+		}
+		else //if we are going under the minimum value we need to turn the other way
+		{
+			turn = 0; //false
+		}
+	}
+	else //else we are still turning original direction
+	{
+		if(!(TCE0_CCA >= 1150)) //make sure we aren't going over the maximum value
+		{
+			TCE0_CCA += 3;
+			//setInt = TCE0_CCA;
+			//setFlag = 1; //true
+			PORTH_OUT = TCE0_CCA/10;
+		}
+		else //if we are going over the maximum value we need to turn the other way.
+		{
+			turn = 1; //true
+		}
+	}
+}
+
 void main(void)
 {
 	int receiveInt = 0;
-	int setInt = 0;
-	int setFlag = 0; //false
+	setInt = 0;
+	setFlag = 0; //false
 	unsigned long sClk, pClk;
 	
 	cli(); //
@@ -96,6 +132,7 @@ void main(void)
 	TCE0_CTRLE = 0x00; //turn off byte mode
 	TCE0_PER = 10000; //set the top of the period to 20ms
 	TCE0_CCA = 350; //lower bound, datasheet says 600 microseconds(which should be 300) but that is to low so set it to this
+	TCE0_INTCTRLB = 0x01; //turn on CCA interrupt at low priority.
 	
 	/*
 	* Port J configuration for pushbutton incrementing
@@ -123,7 +160,7 @@ void main(void)
 		 {
 			 USART_read(&serialStruct, receiveString);
 			 receiveInt = atoi(receiveString);
-			 if(receiveInt < 300 || receiveInt > 1200)
+			 if(receiveInt < 350 || receiveInt > 1150)
 				USART_send(&serialStruct, "These are not the values you are looking for");
 			 else
 				TCE0_CCA = receiveInt;
