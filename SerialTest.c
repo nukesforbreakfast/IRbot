@@ -56,12 +56,14 @@ void main(void)
 		
 	while(1)
 	{
-		USART_send(&serialStruct, "Hey, am I working?");
-		while (!(serialStruct.serStatus & _USART_TX_EMPTY)) { ; }
+		//USART_send(&serialStruct, "Hey, am I working?");
+		
 		if(serialStruct.serStatus & _USART_RX_DONE)
 		{
 			USART_read(&serialStruct, recieveString);
 			USART_send(&serialStruct, recieveString);
 		}
+		
+		while (!(serialStruct.serStatus & _USART_TX_EMPTY)) { ; }
 	}
 }
