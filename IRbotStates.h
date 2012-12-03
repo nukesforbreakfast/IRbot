@@ -14,14 +14,17 @@
 #include <avr/AVRXlib/AVRX_Serial.h>
 #include <stdlib.h>
 
+extern volatile int stateVar;
+extern volatile int degreeVar;
+
 /*
 *This is the function to handle the servo scanning.
 */
-void scanState()
+void scanState();
 
 /*
 *This is the function to handle attempting to acquire the signal
 */
-//void aquireState()
+void acquireState();
 
 #endif /* IRBOTSTATES_H_ */

@@ -128,7 +128,7 @@ void main(void)
 	TCE0_CTRLE = 0x00; //turn off byte mode
 	TCE0_PER = 10000; //set the top of the period to 20ms
 	TCE0_CCA = 350; //lower bound, datasheet says 600 microseconds(which should be 300) but that is to low so set it to this
-	TCE0_INTCTRLA = 0x01; //turn on CCA interrupt at low priority.
+	TCE0_INTCTRLA = 0x01; //turn on Overflow interrupt at low priority.
 	
 	/*
 	* Port J configuration for pushbutton incrementing
