@@ -16,6 +16,7 @@
 
 extern volatile int stateVar;
 extern volatile int degreeVar;
+extern volatile int degreeSideVar;
 
 /*
 *This is the function to handle the servo scanning.

@@ -38,7 +38,7 @@ void scanState()
 	TCC1_CTRLB = 0x10 | TC_WGMODE_NORMAL_gc; //turn on capture channel A and set waveform generation mode normal
 	TCC1_CTRLD = 0xC8; //set events to Pulse Width capture, no timer delay, and CCA listens to event channel 0, CCB to 1, etc... see datasheet
 	TCC1_CTRLE = 0x00; //turn off byte mode
-	TCC1_INTCTRLB = 0x00; //set CCA interrupt to low
+	TCC1_INTCTRLB = 0x01; //set CCA interrupt to low
 	TCC1_PER = 0xFFFF; //set the top of the period to max 16-bit value
 	/*
 	* Port F configuration
@@ -64,6 +64,23 @@ void scanState()
 */
 void acquireState()
 {
+	/********************************************************
+	* Port J pushbutton setup								*
+	* temporarily for restarting the scan state for testing *
+	********************************************************/
+	/*
+	* Port J configuration
+	*/
+	PORTJ_DIR = 0x00; //all pins as input
+	PORTJ_INTCTRL = 0x01; //turn on Interrupt 0 to low priority
+	PORTJ_PIN0CTRL = 0x01; //set pin 0 so only rising edges trigger
+	PORTJ_INT0MASK = 0x01; //mask interrupt 0 to only be fired by pin 0
+	
+	
+	/*************************************************************
+	* Section of state to handle calculating the degrees to turn *
+	* as well as motor control									 *
+	*************************************************************/
 	degreeVar = TCE0_CCA * 2; //double TCE0_CCA gives you microseconds
 	
 	if(degreeVar > 1500)
@@ -71,13 +88,23 @@ void acquireState()
 		//we need to turn right
 		degreeVar = 2400 - degreeVar; //normalize this to be between 0-900 microseconds
 		degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
+		degreeSideVar = 1; //this indicates this will be degreeVar degrees to the right.
 	}
 	else
 	{
 		//we need to turn left
 		degreeVar = 1500 - degreeVar; //normalize this to be between 0-900 microseconds
-		degreeVar /= 10; //this will guve us a value in degrees as 10 microseconds = 1 degree
+		degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
+		degreeSideVar = 0; //this indicates this will be degreeVar degrees to the left.
 	}
 	
 	//need to do something with this value and motors here.
+	//temporary code below:
+	PORTH_OUT = degreeVar;
+	//PORTH_OUT |= degreeSideVar << 7;
+	
+	while(stateVar == 1)
+	{
+		;
+	}
 }
