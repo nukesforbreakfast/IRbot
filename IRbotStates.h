@@ -28,4 +28,9 @@ void scanState();
 */
 void acquireState();
 
+/*
+* This is a fucntion to set up LED transmitters
+*/
+void setupTransmit();
+
 #endif /* IRBOTSTATES_H_ */

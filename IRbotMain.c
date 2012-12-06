@@ -13,6 +13,37 @@ volatile int turn = 0;
 volatile int stateVar = 0; //used to switch between states
 volatile int degreeVar = 0; //used for seeing which degree the servo is at.
 volatile int degreeSideVar = 0; //used for determining left or right, 0 = left, 1 = right
+volatile int accum = 0; //used for LED's
+
+/*
+* ISR to handle F0 CCA
+* used to control sending of 1.2ms on/off LED signal
+*/
+ISR(TCD0_CCA_vect)
+{
+	if(accum == 24)
+	{
+		TCD0_CTRLA = TC_CLKSEL_OFF_gc;
+		TCD1_CTRLA = TC_CLKSEL_DIV64_gc;
+		PORTD_OUT &= ~0x01;
+		accum = 0;
+	}
+	else
+	{
+		++accum;
+	}
+	
+}
+
+/*
+* ISR to handle TCF1 overflow
+* used to generate 1.2ms on/off LED signal
+*/
+ISR(TCD1_OVF_vect)
+{
+	TCD1_CTRLA = TC_CLKSEL_OFF_gc;
+	TCD0_CTRLA = TC_CLKSEL_DIV64_gc;
+}
 
 /*
 * TCE0_CCA overflow interrupt vector
@@ -125,8 +156,13 @@ void main(void)
 	/*
 	* Port Q configuration for accessing Serial Via USB using USARTD0, analog stuff on PORTB, etc...
 	*/
-	PORTQ_DIR = 0x0F; //port q lower 3 bits control access to usb and other stuff so get access with these two lines
-	PORTQ_OUT = 0x05; //if using port F make this hex 5.
+	//PORTQ_DIR = 0x0F; //port q lower 3 bits control access to usb and other stuff so get access with these two lines
+	//PORTQ_OUT = 0x05; //if using port F make this hex 5.
+	
+	/*
+	* Call setupTransmit here to turn on LED transmit signal going out on portD pin 0
+	*/
+	setupTransmit();
 	
 	sei();
 	

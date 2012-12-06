@@ -108,3 +108,37 @@ void acquireState()
 		;
 	}
 }
+
+void setupTransmit()
+{
+	/*
+	* Timer port D0 configuration
+	* The current values of PER and CCA for this timer will result in the 38Khz oscillating signal needed
+	* in order to generate 1's and 0's that the reciever recognizes. Do not change these values.
+	*/
+	TCD0_CTRLA = TC_CLKSEL_DIV64_gc; //set timer 
+	TCD0_CTRLB = 0x10 | TC_WGMODE_SS_gc; //turn on capture(CCAEN) and set waveform generation mode to PWM
+	TCD0_CTRLC = 0x00; //turn off compares
+	TCD0_CTRLD = 0x00; //turn off events
+	TCD0_CTRLE = 0x00; //turn off byte mode
+	TCD0_PER = 12; //set the top of the period
+	TCD0_CCA = 6; //set the compare register value to achieve 50% duty cycle at 
+	TCD0_INTCTRLB = 0x00; //set the CCA interrupt to low priority.
+	
+	/*
+	* Timer port D1 configuration
+	*/
+	TCD1_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially
+	TCD1_CTRLB = TC_WGMODE_NORMAL_gc; //set timer to normal operation
+	TCD1_CTRLC = 0x00; //turn off compares
+	TCD1_CTRLD = 0x00; //turn off events
+	TCD1_CTRLE = 0x00; //turn off byte mode
+	TCD1_PER = 500; //1ms
+	TCD1_INTCTRLA = 0x01; //set the overflow interrupt to low priority
+	
+	/*
+	* PORT D setup
+	* set direction for pin 1 without upsetting other pins
+	*/
+	PORTD_DIR = 0xFF;
+}
