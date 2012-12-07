@@ -86,7 +86,7 @@ void acquireState()
 	if(degreeVar > 1500)
 	{
 		//we need to turn right
-		degreeVar = 2400 - degreeVar; //normalize this to be between 0-900 microseconds
+		degreeVar = degreeVar - 1500; //normalize this to be between 0-900 microseconds
 		degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
 		degreeSideVar = 1; //this indicates this will be degreeVar degrees to the right.
 	}
@@ -112,33 +112,33 @@ void acquireState()
 void setupTransmit()
 {
 	/*
-	* Timer port D0 configuration
+	* Timer port F0 configuration
 	* The current values of PER and CCA for this timer will result in the 38Khz oscillating signal needed
 	* in order to generate 1's and 0's that the reciever recognizes. Do not change these values.
 	*/
-	TCD0_CTRLA = TC_CLKSEL_DIV64_gc; //set timer 
-	TCD0_CTRLB = 0x10 | TC_WGMODE_SS_gc; //turn on capture(CCAEN) and set waveform generation mode to PWM
-	TCD0_CTRLC = 0x00; //turn off compares
-	TCD0_CTRLD = 0x00; //turn off events
-	TCD0_CTRLE = 0x00; //turn off byte mode
-	TCD0_PER = 12; //set the top of the period
-	TCD0_CCA = 6; //set the compare register value to achieve 50% duty cycle at 
-	TCD0_INTCTRLB = 0x00; //set the CCA interrupt to low priority.
+	TCF0_CTRLA = TC_CLKSEL_DIV64_gc; //set timer 
+	TCF0_CTRLB = 0x10 | TC_WGMODE_SS_gc; //turn on capture(CCAEN) and set waveform generation mode to PWM
+	TCF0_CTRLC = 0x00; //turn off compares
+	TCF0_CTRLD = 0x00; //turn off events
+	TCF0_CTRLE = 0x00; //turn off byte mode
+	TCF0_PER = 12; //set the top of the period
+	TCF0_CCA = 6; //set the compare register value to achieve 50% duty cycle at 
+	TCF0_INTCTRLB = 0x00; //set the CCA interrupt to low priority.
 	
 	/*
 	* Timer port D1 configuration
 	*/
-	TCD1_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially
-	TCD1_CTRLB = TC_WGMODE_NORMAL_gc; //set timer to normal operation
-	TCD1_CTRLC = 0x00; //turn off compares
-	TCD1_CTRLD = 0x00; //turn off events
-	TCD1_CTRLE = 0x00; //turn off byte mode
-	TCD1_PER = 500; //1ms
-	TCD1_INTCTRLA = 0x01; //set the overflow interrupt to low priority
+	TCF1_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially
+	TCF1_CTRLB = TC_WGMODE_NORMAL_gc; //set timer to normal operation
+	TCF1_CTRLC = 0x00; //turn off compares
+	TCF1_CTRLD = 0x00; //turn off events
+	TCF1_CTRLE = 0x00; //turn off byte mode
+	TCF1_PER = 500; //1ms
+	TCF1_INTCTRLA = 0x01; //set the overflow interrupt to low priority
 	
 	/*
 	* PORT D setup
 	* set direction for pin 1 without upsetting other pins
 	*/
-	PORTD_DIR = 0xFF;
+	PORTF_DIR |= 0x01;
 }

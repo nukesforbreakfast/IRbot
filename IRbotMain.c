@@ -19,12 +19,12 @@ volatile int accum = 0; //used for LED's
 * ISR to handle F0 CCA
 * used to control sending of 1.2ms on/off LED signal
 */
-ISR(TCD0_CCA_vect)
+ISR(TCF0_CCA_vect)
 {
 	if(accum == 24)
 	{
-		TCD0_CTRLA = TC_CLKSEL_OFF_gc;
-		TCD1_CTRLA = TC_CLKSEL_DIV64_gc;
+		TCF0_CTRLA = TC_CLKSEL_OFF_gc;
+		TCF1_CTRLA = TC_CLKSEL_DIV64_gc;
 		PORTD_OUT &= ~0x01;
 		accum = 0;
 	}
@@ -39,10 +39,10 @@ ISR(TCD0_CCA_vect)
 * ISR to handle TCF1 overflow
 * used to generate 1.2ms on/off LED signal
 */
-ISR(TCD1_OVF_vect)
+ISR(TCF1_OVF_vect)
 {
-	TCD1_CTRLA = TC_CLKSEL_OFF_gc;
-	TCD0_CTRLA = TC_CLKSEL_DIV64_gc;
+	TCF1_CTRLA = TC_CLKSEL_OFF_gc;
+	TCF0_CTRLA = TC_CLKSEL_DIV64_gc;
 }
 
 /*
