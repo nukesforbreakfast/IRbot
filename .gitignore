@@ -1,0 +1,7 @@
+#ignore the following files/directories#
+/bin
+/obj
+*.cbp
+*.depend
+*.layout
+*.*~
