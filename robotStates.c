@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 //#include <stdlib.h>
 #include <avr/io.h>
 //#include <avr/iox128a1.h>
