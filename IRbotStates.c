@@ -48,7 +48,7 @@ void scanState()
 	/*
 	* Event System Configuration
 	*/
-	EVSYS_CH0MUX = EVSYS_CHMUX_PORTC_PIN2_gc; //set the event system to send events generated from PortC pin 2 to channel 0
+	EVSYS_CH0MUX = EVSYS_CHMUX_PORTC_PIN0_gc; //set the event system to send events generated from PortC pin 2 to channel 0
 	EVSYS_CH0CTRL = 0x00; //turn off sample filtering
 	
 	while(stateVar == 0)

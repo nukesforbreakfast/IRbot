@@ -131,6 +131,8 @@ ISR(PORTJ_INT0_vect)
 		default:
 			break;
 	}
+	
+	PORTH_OUT = 0x01;
 }
 
 void main(void)
