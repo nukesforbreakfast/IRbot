@@ -24,6 +24,8 @@ volatile int stopRotateFlag= 0;
 // 0=start, 1=scanning, 2= rotating, 3= moving
 returnPackage robotStateVar;
 
+volatile int accum = 0; //used for LED's
+
 ISR(TIMERSONAR1_CCA_vect)
 {
 	compareRegistervalue= TIMERSONAR1_CCA;

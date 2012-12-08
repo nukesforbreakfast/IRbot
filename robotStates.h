@@ -66,6 +66,14 @@
 #define TIMERSONAR2_INTCTRLA 		TCF1_INTCTRLA
 #define TIMERSONAR2_INTCTRLB 		TCF1_INTCTRLB
 
+/*causey's defines*/
+#define SERVO_PWM TCE0
+#define SERVO_PWM_PORT PORTE
+#define IR_PW_CAPTURE TCC1
+#define IR_INPUT_PORT PORTC
+#define TRANSMIT_PORT PORTF
+#define TRANSMIT_OSCILLATOR TCF0
+#define TRANSMIT_TIMER TCF1
 
 typedef struct
 {
@@ -85,6 +93,21 @@ void setupMotors();
 returnPackage rotateState(returnPackage);
 
 returnPackage movingState();
+
+/*
+*This is the function to handle the servo scanning.
+*/
+returnPackage scanState();
+
+/*
+*This is the function to handle attempting to acquire the signal
+*/
+returnPackage acquireState();
+
+/*
+* This is a function to set up LED transmitters
+*/
+void setupTransmit();
 
 
 #endif // ROBOTSTATES_H_INCLUDED
