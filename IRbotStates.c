@@ -43,7 +43,7 @@ void scanState()
 	/*
 	* Port F configuration
 	*/
-	IR_INPUT_PORT.DIR = 0xFF; //all pins as input
+	IR_INPUT_PORT.DIR = 0x00; //all pins as input
 	IR_INPUT_PORT.PIN2CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
 	/*
 	* Event System Configuration
