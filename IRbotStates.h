@@ -14,6 +14,10 @@
 #include <avr/AVRXlib/AVRX_Serial.h>
 #include <stdlib.h>
 
+#define SERVO_PWM TCE0
+#define IR_PW_CAPTURE TCC1
+#define IR_INPUT_PORT PORTC
+
 extern volatile int stateVar;
 extern volatile int degreeVar;
 extern volatile int degreeSideVar;
