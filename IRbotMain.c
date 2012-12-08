@@ -25,7 +25,7 @@ ISR(TCF0_CCA_vect)
 	{
 		TCF0_CTRLA = TC_CLKSEL_OFF_gc;
 		TCF1_CTRLA = TC_CLKSEL_DIV64_gc;
-		PORTD_OUT &= ~0x01;
+		PORTF_OUT &= ~0x01;
 		accum = 0;
 	}
 	else

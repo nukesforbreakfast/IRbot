@@ -15,6 +15,7 @@
 #include <stdlib.h>
 
 #define SERVO_PWM TCE0
+#define SERVO_PWM_PORT PORTE
 #define IR_PW_CAPTURE TCC1
 #define IR_INPUT_PORT PORTC
 

@@ -32,7 +32,7 @@ void scanState()
 	* Setup for IR receiver using pulse width capture *
 	**************************************************/
 	/*
-	* Servo PWM Timer configuration
+	* IR timer capture configuration
 	*/
 	IR_PW_CAPTURE.CTRLA = TC_CLKSEL_DIV64_gc; //set clock source sysclk/64= 500KHz
 	IR_PW_CAPTURE.CTRLB = 0x10 | TC_WGMODE_NORMAL_gc; //turn on capture channel A and set waveform generation mode normal
@@ -41,7 +41,7 @@ void scanState()
 	IR_PW_CAPTURE.INTCTRLB = 0x01; //set CCA interrupt to low
 	IR_PW_CAPTURE.PER = 0xFFFF; //set the top of the period to max 16-bit value
 	/*
-	* Port F configuration
+	* IR input port configuration
 	*/
 	IR_INPUT_PORT.DIR = 0x00; //all pins as input
 	IR_INPUT_PORT.PIN2CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
@@ -126,7 +126,7 @@ void setupTransmit()
 	TCF0_INTCTRLB = 0x00; //set the CCA interrupt to low priority.
 	
 	/*
-	* Timer port D1 configuration
+	* Timer port F1 configuration
 	*/
 	TCF1_CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially
 	TCF1_CTRLB = TC_WGMODE_NORMAL_gc; //set timer to normal operation
@@ -137,7 +137,7 @@ void setupTransmit()
 	TCF1_INTCTRLA = 0x01; //set the overflow interrupt to low priority
 	
 	/*
-	* PORT D setup
+	* PORT F setup
 	* set direction for pin 1 without upsetting other pins
 	*/
 	PORTF_DIR |= 0x01;
