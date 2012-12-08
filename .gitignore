@@ -5,3 +5,6 @@
 *.depend
 *.layout
 *.*~
+#ignore the following files#
+*.cproj
+/Debug

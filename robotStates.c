@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 //#include <stdlib.h>
 #include <avr/io.h>
 //#include <avr/iox128a1.h>
@@ -277,3 +278,4 @@ void setRTC(int topValue)
 
 	RTC_CNT= 0;
 }
+
