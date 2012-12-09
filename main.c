@@ -182,7 +182,7 @@ ISR(SERVO_PWM_OVF_VECT)
 }
 
 /*
-* Interrupt for handling TCC1 capture complete event
+* Interrupt for handling IR_PW_CAPTURE capture complete event
 * If we get a pulse we need to stop servo movement and
 * calculate how much we need to turn and send that to
 * the turning state
@@ -195,10 +195,11 @@ ISR(IR_PW_CAPTURE_VECT)
 		//we first need to stop the servo where it is and hold its position
 		//do this by turning off the overflow interrupt for TCE0
 		SERVO_PWM.INTCTRLA = 0x00; //all interrupts off
-		scanVar = 1;
+		PW_TIMEOUT.CTRLA = TC_CLKSEL_DIV1024_gc; //turn on the timeout timer running at sysclk/1024 = 31.250Khz
+		scanVar = 1; //indicate we got a pulse and need to verify consistency
 		if(SERVO_PWM.CCA > 500 && SERVO_PWM.CCA < 700) //if the pulse width is within the expected width
 		{
-			++pulses
+			++pulses;
 			if(pulses > 9) //if we have gotten 10 consistent pulses;
 			{
 				scanVar = 2;
@@ -208,6 +209,25 @@ ISR(IR_PW_CAPTURE_VECT)
 		break;
 
 		default: //we are in any other state
+		break;
+	}
+}
+
+/*
+* Interrupt for handling the PW_TIMEOUT and saying we did not get
+* a valid sequence of pulses.
+*/
+ISR(PW_TIMEOUT_OVF_VECT)
+{
+	switch(robotStateVar.nextState)
+	{
+		case 1: //we are in scan state
+		PW_TIMEOUT.CTRLA = TC_CLKSEL_OFF_gc; //turn the timeout counter off
+		pulses = 0; //reset pulses
+		scanVar = 3; //indicate we did not get a consistent sequence of pulses
+		break;
+		
+		default: //any other state
 		break;
 	}
 }

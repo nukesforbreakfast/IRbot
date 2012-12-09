@@ -317,6 +317,14 @@ returnPackage scanState()
 	*/
 	EVSYS_CH0MUX = EVSYS_CHMUX_PORTC_PIN0_gc; //set the event system to send events generated from PortC pin 2 to channel 0
 	EVSYS_CH0CTRL = 0x00; //turn off sample filtering
+	
+	/****************************************
+	* Setup for pulse width capture timeout *
+	****************************************/
+	PW_TIMEOUT.CTRLA = TC_CLKSEL_OFF_gc; //set timer off initially
+	PW_TIMEOUT.CTRLB = TC_WGMODE_NORMAL_gc; //set the clock to normal operation
+	PW_TIMEOUT.PER = 0xFF; //set to maximum period to get just more than 2 seconds of time at sysclk/1024 = 31.250Khz
+	PW_TIMEOUT.INTCTRLA = 0x01; //set overflow interrupt to low priority
 
 	/*************************
 	* Locally Used Variables *
@@ -396,6 +404,7 @@ returnPackage scanState()
 	***************************************/
 	IR_PW_CAPTURE.CTRLA = TC_CLKSEL_OFF_gc;
 	SERVO_PWM.CTRLA = TC_CLKSEL_OFF_gc;
+	PW_TIMEOUT.CTRLA = TC_CLKSEL_OFF_gc;
 
 	return localStatePackage;
 }
