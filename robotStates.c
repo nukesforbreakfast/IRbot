@@ -6,11 +6,6 @@
 #include <avr/AVRX_Serial.h>
 #include "robotStates.h"
 
-extern int timeOutFlag;
-extern int sonarFlag;
-extern int stopRotateFlag;
-
-
 //**************************************************************************************************
 // PWMPORT = PORTE pins 0,1
 // PWMTIMER = TCE0
@@ -297,7 +292,7 @@ returnPackage scanState()
 	/*
 	* PORT E configuration
 	*/
-	PORTE_DIR = 0xFF; //set pin 0 to output without messing up other pins
+	SERVO_PWM_PORT.DIR |= 0x01; //set pin 0 to output without messing up other pins
 	
 	/**************************************************
 	* Setup for IR receiver using pulse width capture *
@@ -322,64 +317,77 @@ returnPackage scanState()
 	EVSYS_CH0MUX = EVSYS_CHMUX_PORTC_PIN0_gc; //set the event system to send events generated from PortC pin 2 to channel 0
 	EVSYS_CH0CTRL = 0x00; //turn off sample filtering
 	
-	while(stateVar == 0)
+	/*************************
+	* Locally Used Variables *
+	*************************/
+	int keepLooping = 1;//true
+	returnPackage localStatePackage; //local struct to return at end of function
+	int degreeVar = 0; //used for seeing which degree the servo is at.
+	int degreeSideVar = 0; //used for determining left or right, 0 = left, 1 = right
+	
+	while(keepLooping)
 	{
-		;
+		switch(scanVar)
+		{
+			case 0: //we are still scanning
+			break;
+			
+			case 1: //we got a pulse
+			/*************************************************************
+			* Section of state to handle calculating the degrees to turn *
+			* and put it into the structure to return					 *
+			*************************************************************/
+			degreeVar = SERVO_PWM.CCA * 2; //double TCE0_CCA gives you microseconds
+	
+			if(degreeVar > 1500)
+			{
+				//we need to turn right
+				degreeVar = degreeVar - 1500; //normalize this to be between 0-900 microseconds
+				degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
+				degreeSideVar = 1; //this indicates this will be degreeVar degrees to the right.
+			}
+			else
+			{
+				//we need to turn left
+				degreeVar = 1500 - degreeVar; //normalize this to be between 0-900 microseconds
+				degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
+				degreeSideVar = 0; //this indicates this will be degreeVar degrees to the left.
+			}
+	
+			//need to do something with this value and motors here.
+			//temporary code below:
+			PORTH_OUT = degreeVar;
+			PORTH_OUT |= degreeSideVar << 7;
+			
+			localStatePackage.rotateQuantity = degreeVar; //give the degrees we need to turn
+			
+			if(degreeVar) //if we need to turn right
+			{
+				localStatePackage.direction = 'R'; //set direction to right
+			}
+			else //if we need to turn left
+			{
+				localStatePackage.direction = 'L'; //set direction to left
+			}
+			
+			localStatePackage.prevState = 1; //indicate we were in the scan state
+			localStatePackage.nextState = 2; //we need to go to rotate state
+			
+			keepLooping = 0; //false, exit the loop
+			break;
+			
+			case 2: //we have finished scanning and have recieved no pulses
+			localStatePackage.prevState = 1; //indicate we were in the scan state
+			localStatePackage.nextState = 3; //we need to go to move state
+			keepLooping = 0; //false, exit the loop
+			break;
+			
+			default: //oh shit what the fucks
+			break;		
+		}
 	}
 	
-}
-
-/*
-* State for handling the acquisition of the signal and calculating the movement vector.
-* Use the value of CCA to see what degree we are at.
-*/
-returnPackage acquireState()
-{
-	/********************************************************
-	* Port J pushbutton setup								*
-	* temporarily for restarting the scan state for testing *
-	********************************************************/
-	/*
-	* Port J configuration
-	*/
-	/*
-	PORTJ_DIR = 0x00; //all pins as input
-	PORTJ_INTCTRL = 0x01; //turn on Interrupt 0 to low priority
-	PORTJ_PIN0CTRL = 0x01; //set pin 0 so only rising edges trigger
-	PORTJ_INT0MASK = 0x01; //mask interrupt 0 to only be fired by pin 0
-	*/
-	
-	
-	/*************************************************************
-	* Section of state to handle calculating the degrees to turn *
-	* as well as motor control									 *
-	*************************************************************/
-	degreeVar = TCE0_CCA * 2; //double TCE0_CCA gives you microseconds
-	
-	if(degreeVar > 1500)
-	{
-		//we need to turn right
-		degreeVar = degreeVar - 1500; //normalize this to be between 0-900 microseconds
-		degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
-		degreeSideVar = 1; //this indicates this will be degreeVar degrees to the right.
-	}
-	else
-	{
-		//we need to turn left
-		degreeVar = 1500 - degreeVar; //normalize this to be between 0-900 microseconds
-		degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
-		degreeSideVar = 0; //this indicates this will be degreeVar degrees to the left.
-	}
-	
-	//need to do something with this value and motors here.
-	//temporary code below:
-	PORTH_OUT = degreeVar;
-	PORTH_OUT |= degreeSideVar << 7;
-	
-	while(stateVar == 1)
-	{
-		;
-	}
+	return localStatePackage;
 }
 
 void setupTransmit()
