@@ -195,7 +195,10 @@ ISR(IR_PW_CAPTURE_VECT)
 		//we first need to stop the servo where it is and hold its position
 		//do this by turning off the overflow interrupt for TCE0
 		SERVO_PWM.INTCTRLA = 0x00; //all interrupts off
-		PW_TIMEOUT.CTRLA = TC_CLKSEL_DIV1024_gc; //turn on the timeout timer running at sysclk/1024 = 31.250Khz
+		if(pulses == 0) //if this if the first pulse
+		{
+			PW_TIMEOUT.CTRLA = TC_CLKSEL_DIV1024_gc; //turn on the timeout timer running at sysclk/1024 = 31.250Khz
+		}
 		scanVar = 1; //indicate we got a pulse and need to verify consistency
 		if(SERVO_PWM.CCA > 500 && SERVO_PWM.CCA < 700) //if the pulse width is within the expected width
 		{
