@@ -167,7 +167,7 @@ ISR(SERVO_PWM_OVF_VECT)
 			}
 		}
 
-		if(swivels > 3)
+		if(swivels > 1)
 		{
 			scanVar = 2; //we got no signal, indicate to the function as such
 			swivels = 0; //reset swivels

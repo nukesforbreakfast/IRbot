@@ -358,8 +358,8 @@ returnPackage scanState()
 			PORTH_OUT |= degreeSideVar << 7;
 
 			localStatePackage.rotateQuantity = degreeVar; //give the degrees we need to turn
-
-			if(degreeVar) //if we need to turn right
+			
+			if(degreeSideVar) //if we need to turn right
 			{
 				localStatePackage.direction = 'R'; //set direction to right
 			}
