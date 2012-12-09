@@ -6,11 +6,6 @@
 #include <avr/AVRX_Serial.h>
 #include "robotStates.h"
 
-extern int timeOutFlag;
-extern int sonarFlag;
-extern int stopRotateFlag;
-
-
 //**************************************************************************************************
 // PWMPORT = PORTE pins 0,1
 // PWMTIMER = TCE0
@@ -278,3 +273,153 @@ void setRTC(int topValue)
 	RTC_CNT= 0;
 }
 
+returnPackage scanState()
+{
+	/************************************************
+	* PWM Setup for the servo using PORTE, TCE0_CCA *
+	************************************************/
+	/*
+	* Timer E0 setup for servo PWM
+	*/
+	SERVO_PWM.CTRLA = TC_CLKSEL_DIV64_gc; //set timer to div/64
+	SERVO_PWM.CTRLB = 0x10 | TC_WGMODE_SS_gc; //turn on capture(CCAEN) and set waveform generation mode to PWM
+	SERVO_PWM.CTRLC = 0x00; //turn off compares
+	SERVO_PWM.CTRLD = 0x00; //turn off events
+	SERVO_PWM.CTRLE = 0x00; //turn off byte mode
+	SERVO_PWM.PER = 10000; //set the top of the period to 20ms
+	SERVO_PWM.CCA = 350; //lower bound, upper bound should be 1150
+	SERVO_PWM.INTCTRLA = 0x01; //turn on Overflow interrupt at low priority.
+	/*
+	* PORT E configuration
+	*/
+	SERVO_PWM_PORT.DIR |= 0x01; //set pin 0 to output without messing up other pins
+	
+	/**************************************************
+	* Setup for IR receiver using pulse width capture *
+	**************************************************/
+	/*
+	* IR timer capture configuration
+	*/
+	IR_PW_CAPTURE.CTRLA = TC_CLKSEL_DIV64_gc; //set clock source sysclk/64= 500KHz
+	IR_PW_CAPTURE.CTRLB = 0x10 | TC_WGMODE_NORMAL_gc; //turn on capture channel A and set waveform generation mode normal
+	IR_PW_CAPTURE.CTRLD = 0xC8; //set events to Pulse Width capture, no timer delay, and CCA listens to event channel 0, CCB to 1, etc... see datasheet
+	IR_PW_CAPTURE.CTRLE = 0x00; //turn off byte mode
+	IR_PW_CAPTURE.INTCTRLB = 0x01; //set CCA interrupt to low
+	IR_PW_CAPTURE.PER = 0xFFFF; //set the top of the period to max 16-bit value
+	/*
+	* IR input port configuration
+	*/
+	IR_INPUT_PORT.DIR = 0x00; //all pins as input
+	IR_INPUT_PORT.PIN2CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
+	/*
+	* Event System Configuration
+	*/
+	EVSYS_CH0MUX = EVSYS_CHMUX_PORTC_PIN0_gc; //set the event system to send events generated from PortC pin 2 to channel 0
+	EVSYS_CH0CTRL = 0x00; //turn off sample filtering
+	
+	/*************************
+	* Locally Used Variables *
+	*************************/
+	int keepLooping = 1;//true
+	returnPackage localStatePackage; //local struct to return at end of function
+	int degreeVar = 0; //used for seeing which degree the servo is at.
+	int degreeSideVar = 0; //used for determining left or right, 0 = left, 1 = right
+	
+	while(keepLooping)
+	{
+		switch(scanVar)
+		{
+			case 0: //we are still scanning
+			break;
+			
+			case 1: //we got a pulse
+			/*************************************************************
+			* Section of state to handle calculating the degrees to turn *
+			* and put it into the structure to return					 *
+			*************************************************************/
+			degreeVar = SERVO_PWM.CCA * 2; //double TCE0_CCA gives you microseconds
+	
+			if(degreeVar > 1500)
+			{
+				//we need to turn right
+				degreeVar = degreeVar - 1500; //normalize this to be between 0-900 microseconds
+				degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
+				degreeSideVar = 1; //this indicates this will be degreeVar degrees to the right.
+			}
+			else
+			{
+				//we need to turn left
+				degreeVar = 1500 - degreeVar; //normalize this to be between 0-900 microseconds
+				degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
+				degreeSideVar = 0; //this indicates this will be degreeVar degrees to the left.
+			}
+	
+			//need to do something with this value and motors here.
+			//temporary code below:
+			PORTH_OUT = degreeVar;
+			PORTH_OUT |= degreeSideVar << 7;
+			
+			localStatePackage.rotateQuantity = degreeVar; //give the degrees we need to turn
+			
+			if(degreeVar) //if we need to turn right
+			{
+				localStatePackage.direction = 'R'; //set direction to right
+			}
+			else //if we need to turn left
+			{
+				localStatePackage.direction = 'L'; //set direction to left
+			}
+			
+			localStatePackage.prevState = 1; //indicate we were in the scan state
+			localStatePackage.nextState = 2; //we need to go to rotate state
+			
+			keepLooping = 0; //false, exit the loop
+			break;
+			
+			case 2: //we have finished scanning and have recieved no pulses
+			localStatePackage.prevState = 1; //indicate we were in the scan state
+			localStatePackage.nextState = 3; //we need to go to move state
+			keepLooping = 0; //false, exit the loop
+			break;
+			
+			default: //oh shit what the fucks
+			break;		
+		}
+	}
+	
+	return localStatePackage;
+}
+
+void setupTransmit()
+{
+	/*
+	* Timer port F0 configuration
+	* The current values of PER and CCA for this timer will result in the 38Khz oscillating signal needed
+	* in order to generate 1's and 0's that the reciever recognizes. Do not change these values.
+	*/
+	TRANSMIT_OSCILLATOR.CTRLA = TC_CLKSEL_DIV64_gc; //set timer 
+	TRANSMIT_OSCILLATOR.CTRLB = 0x10 | TC_WGMODE_SS_gc; //turn on capture(CCAEN) and set waveform generation mode to PWM
+	TRANSMIT_OSCILLATOR.CTRLC = 0x00; //turn off compares
+	TRANSMIT_OSCILLATOR.CTRLD = 0x00; //turn off events
+	TRANSMIT_OSCILLATOR.CTRLE = 0x00; //turn off byte mode
+	TRANSMIT_OSCILLATOR.PER = 12; //set the top of the period
+	TRANSMIT_OSCILLATOR.CCA = 6; //set the compare register value to achieve 50% duty cycle at 
+	TRANSMIT_OSCILLATOR.INTCTRLB = 0x00; //set the CCA interrupt to low priority.
+	
+	/*
+	* Timer port F1 configuration
+	*/
+	TRANSMIT_TIMER.CTRLA = TC_CLKSEL_OFF_gc; //set timer to be off intially
+	TRANSMIT_TIMER.CTRLB = TC_WGMODE_NORMAL_gc; //set timer to normal operation
+	TRANSMIT_TIMER.CTRLC = 0x00; //turn off compares
+	TRANSMIT_TIMER.CTRLD = 0x00; //turn off events
+	TRANSMIT_TIMER.CTRLE = 0x00; //turn off byte mode
+	TRANSMIT_TIMER.PER = 500; //1ms
+	TRANSMIT_TIMER.INTCTRLA = 0x01; //set the overflow interrupt to low priority
+	
+	/*
+	* PORT F setup
+	* set direction for pin 1 without upsetting other pins
+	*/
+	TRANSMIT_PORT.DIR |= 0x01;
+}

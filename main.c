@@ -24,6 +24,14 @@ volatile int stopRotateFlag= 0;
 // 0=start, 1=scanning, 2= rotating, 3= moving
 returnPackage robotStateVar;
 
+volatile int accum = 0; //used for LED's
+
+volatile int scanVar = 0; //used to control the function of the scan state
+
+volatile int turn = 0; //used to handle servo scanning
+
+volatile int swivels = 0; //used to count how many times we have swiveled
+
 ISR(TIMERSONAR1_CCA_vect)
 {
 	compareRegistervalue= TIMERSONAR1_CCA;
@@ -128,6 +136,75 @@ ISR(PORTJ_INT1_vect)
 
 }
 
+/*
+* Servo PWM overflow interrupt vector
+* used to swivel the servo back and forth
+*/
+ISR(SERVO_PWM_OVF_VECT)
+{
+	switch(robotStateVar.nextState)
+	{
+		case 1: //we are in the scan state
+		if(turn) //if its true that we need to turn back the other way
+		{
+			if(!(SERVO_PWM.CCA <= 350)) //make sure we aren't going under the minimum value
+			{
+				SERVO_PWM.CCA -= 5;
+				PORTH_OUT = TCE0_CCA/10;
+			}
+			else //if we are going under the minimum value we need to turn the other way
+			{
+				turn = 0; //false
+				++swivels;
+			}
+		}
+		else //else we are still turning original direction
+		{
+			if(!(SERVO_PWM.CCA >= 1150)) //make sure we aren't going over the maximum value
+			{
+				TCE0_CCA += 5;
+				PORTH_OUT = TCE0_CCA/10;
+			}
+			else //if we are going over the maximum value we need to turn the other way.
+			{
+				turn = 1; //true
+			}
+		}
+		
+		if(swivels > 2)
+		{
+			scanVar = 2; //we got no signal, indicate to the function as such
+			swivels = 0; //reset swivels
+		}
+		break;
+		
+		default: //we are in any other state
+		break;
+	}
+}
+
+/*
+* Interrupt for handling TCC1 capture complete event
+* If we get a pulse we need to stop servo movement and
+* calculate how much we need to turn and send that to
+* the turning state
+*/
+ISR(IR_PW_CAPTURE_VECT)
+{
+	switch(robotStateVar.nextState)
+	{
+		case 1: //we are in scanState
+		//we first need to stop the servo where it is and hold its position
+		//do this by turning off the overflow interrupt for TCE0
+		SERVO_PWM.INTCTRLA = 0x00; //all interrupts off
+		scanVar = 1;
+		break;
+		
+		default: //we are in any other state
+		break;
+	}
+}
+
 int main(void)
 {
 	unsigned long sClk, pClk;
@@ -163,8 +240,9 @@ int main(void)
 
 		switch(robotStateVar.nextState)
 		{
-			//case 1:
-				//break;
+			case 1: //scanState
+				robotStateVar = scanState();
+				break;
 			case 2://rotate state
 				PORTH_OUT= 2;
 				robotStateVar=rotateState(robotStateVar);
