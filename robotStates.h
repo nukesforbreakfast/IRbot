@@ -1,7 +1,7 @@
 #ifndef ROBOTSTATES_H_INCLUDED
 #define ROBOTSTATES_H_INCLUDED
 #include <avr/io.h>
-//#include <avr/iox128a1.h>
+#include <avr/iox128a1.h>
 #include <avr/interrupt.h>
 #include <avr/AVRX_Clocks.h>
 #include <avr/AVRX_Serial.h>
@@ -10,7 +10,9 @@
 
 #define MOVEFORWARD_OR				0b10100000
 #define MOVEFORWARD_AND				0b10101111
-#define STOPMOVING					0b00001111
+#define STOPMOVING_OR				0b11110000
+#define STOPMOVING_AND				0b00001111
+
 
 #define ROTATERIGHT_OR				0b01100000
 #define ROTATERIGHT_AND				0b01101111
@@ -32,6 +34,8 @@
 #define PWMTIMER_CC1 				TCE0_CCC
 #define PWMTIMER_CC2 				TCE0_CCD
 
+#define PWMTIMER_INTCTRLA			TCE0_INTCTRLA
+#define PWMTIMER_INTCTRLB 			TCE0_INTCTRLB
 
 #define SONAR1ENABLE_DIR 			PORTF_DIR
 #define SONAR1ENABLE_OUT	 		PORTF_OUT
