@@ -18,9 +18,6 @@
 //**************************************************************************************************
 returnPackage movingState()
 {
-
-	PORTH_OUT= 0x02;
-
 	returnPackage localStateVar;
 
 	int haltFlag= 0;
@@ -28,32 +25,19 @@ returnPackage movingState()
 	setupMotors();
 	enableSonar();
 
-	//set RTC to count roughly 2 seconds
-	setRTC(2000);
-
-
-    /*
-	RTC_PER= 2000; // should be roughly x milliseconds
-
-	CLK_RTCCTRL=0b00000101;
-
-	RTC_INTCTRL= 0x02; //set overflow interrupt priority to med
-
-	RTC_CTRL= 0x01; //set clock prescaler to one
-
-	RTC_CNT= 0;
-    */
+	//set RTC to count roughly 5 seconds
+	//setRTC(5000);
 
 	// motors A, B will have full duty cycle
     PWMTIMER_CC1= 10000;
     PWMTIMER_CC2= 10000;
 
 
-	do
+	while(haltFlag == 0)
 	{
 		haltFlag= sonarFlag | timeOutFlag;
 
-	}while(haltFlag == 0);
+	};
 
 	RTC_CTRL= 0x00;
     RTC_CNT= 0;
@@ -64,7 +48,7 @@ returnPackage movingState()
 		case 1:
 			// break
 			//MOTORDIR_OUT |= 0b00111100; // 0x3C
-			MOTORDIR_OUT &= STOPMOVING; //0xC3
+			MOTORDIR_OUT &= STOPMOVING_AND;
 
 			//go to rotate left until no obstacle
 			localStateVar.nextState= 2;
@@ -74,7 +58,7 @@ returnPackage movingState()
 		case 2:
 		case 3:
 			// break
-			MOTORDIR_OUT &= STOPMOVING; //0xC3
+			MOTORDIR_OUT &= STOPMOVING_AND;
 
 			//go to rotate right x degrees
 			localStateVar.nextState= 2;
@@ -86,7 +70,7 @@ returnPackage movingState()
 	}
 
 	localStateVar.prevState= 3;
-	SONAR1ENABLE_OUT &= 0b11110111;
+	SONAR1ENABLE_OUT &= 0b11111110;
     return localStateVar;
 }
 
@@ -97,25 +81,11 @@ returnPackage movingState()
 //**************************************************************************************************
 returnPackage rotateState(returnPackage localStateVar)
 {
-    // while it is decided how to determine direction in main, this switch will stand in
-    /*
-    switch(haltFlag)
-    {
-        case 1:
-            direction= 'R';
-            break;
-        case 2:
-            direction= 'L';
-            break;
-        default:
-            break;
-    }
-    */
-
-	int rotateFlag= 1;
+	int rotateFlag= 0;
 
 	setupMotors();
 	enableSonar();
+
 
     switch(localStateVar.direction)
     {
@@ -124,13 +94,13 @@ returnPackage rotateState(returnPackage localStateVar)
             // if 0b11000011 is break mode, test for rotate left by forcing bits 3,4 low
             MOTORDIR_OUT |= ROTATELEFT_OR;
             MOTORDIR_OUT &= ROTATELEFT_AND;
+            RTC_CTRL= 0x00;
             break;
         case 'r':
         case 'R':
             MOTORDIR_OUT |= ROTATERIGHT_OR;
             MOTORDIR_OUT &= ROTATERIGHT_AND;
-            //set rtc for .3 seconds
-            setRTC(localStateVar.rotateQuantity);
+            //set rtc
             break;
         default:
             break;
@@ -140,26 +110,30 @@ returnPackage rotateState(returnPackage localStateVar)
     PWMTIMER_CC1= 10000;
     PWMTIMER_CC2= 10000;
 
+	if (localStateVar.rotateQuantity > 0)
+	{
+		setRTC(localStateVar.rotateQuantity);
+	}
 
 	do
 	{
-		rotateFlag= sonarFlag | stopRotateFlag;
+		rotateFlag= stopRotateFlag;
 
-	}while(rotateFlag == 1);
+	}while(rotateFlag == 0);
 
 	RTC_CTRL= 0x00;
     RTC_CNT= 0;
 
 	// test for break mode break mode
-	MOTORDIR_OUT &= STOPMOVING; // 0x3C
+	MOTORDIR_OUT &= STOPMOVING_AND; // 0x3C
 
     switch(stopRotateFlag)
     {
-        case 0:
+        case 1:
             localStateVar.nextState= 3;
             break;
         case 2:
-            localStateVar.nextState= 1;
+            localStateVar.nextState= 3;
             break;
         default:
             break;
@@ -189,7 +163,9 @@ void setupMotors()
 	PWMTIMER_CTRLB = 0xC3; //turn on capture C, and D and set waveform generation mode to single slope PWM
 	PWMTIMER_CTRLD = 0x00; //turn off events
 	PWMTIMER_CTRLE = 0x00; //turn off byte mode
-	PWMTIMER_PER = 10000; //set the top of the period so we have a total period of 20ms(for servo)
+	PWMTIMER_PER = 10000; //set the top of the period so we have a total period of 20ms
+	PWMTIMER_INTCTRLA= 0x00;
+	PWMTIMER_INTCTRLB= 0x00;
 
 	MOTORDIR_DIR |= 0b11110000; //0xF0
 	// force bits 2,6 low
@@ -239,13 +215,13 @@ void enableSonar()
 	TIMERSONAR2_PER = 0xFFFF; //set the top of the period to max 16-bit value
 
 	// set pin 1 direction to output
-	SONAR1ENABLE_DIR |= 0b00000010; // 0x08;
+	SONAR1ENABLE_DIR |= 0b00000010; // 0x02;
 
 	// set pin 3 direction to output
 	SONAR2ENABLE_DIR |= 0b00001000; // 0x08;
 
 	// set pin 1 high
-	SONAR1ENABLE_OUT |= 0b00000010; // 0x08;
+	SONAR1ENABLE_OUT |= 0b00000010; // 0x02;
 
 	// set pin 3 high
 	SONAR2ENABLE_OUT |= 0b00001000; // 0x08;
@@ -293,7 +269,7 @@ returnPackage scanState()
 	* PORT E configuration
 	*/
 	SERVO_PWM_PORT.DIR |= 0x01; //set pin 0 to output without messing up other pins
-	
+
 	/**************************************************
 	* Setup for IR receiver using pulse width capture *
 	**************************************************/
@@ -316,7 +292,7 @@ returnPackage scanState()
 	*/
 	EVSYS_CH0MUX = EVSYS_CHMUX_PORTC_PIN0_gc; //set the event system to send events generated from PortC pin 2 to channel 0
 	EVSYS_CH0CTRL = 0x00; //turn off sample filtering
-	
+
 	/*************************
 	* Locally Used Variables *
 	*************************/
@@ -324,21 +300,21 @@ returnPackage scanState()
 	returnPackage localStatePackage; //local struct to return at end of function
 	int degreeVar = 0; //used for seeing which degree the servo is at.
 	int degreeSideVar = 0; //used for determining left or right, 0 = left, 1 = right
-	
+
 	while(keepLooping)
 	{
 		switch(scanVar)
 		{
 			case 0: //we are still scanning
 			break;
-			
+
 			case 1: //we got a pulse
 			/*************************************************************
 			* Section of state to handle calculating the degrees to turn *
 			* and put it into the structure to return					 *
 			*************************************************************/
 			degreeVar = SERVO_PWM.CCA * 2; //double TCE0_CCA gives you microseconds
-	
+
 			if(degreeVar > 1500)
 			{
 				//we need to turn right
@@ -353,14 +329,14 @@ returnPackage scanState()
 				degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
 				degreeSideVar = 0; //this indicates this will be degreeVar degrees to the left.
 			}
-	
+
 			//need to do something with this value and motors here.
 			//temporary code below:
 			PORTH_OUT = degreeVar;
 			PORTH_OUT |= degreeSideVar << 7;
-			
+
 			localStatePackage.rotateQuantity = degreeVar; //give the degrees we need to turn
-			
+
 			if(degreeVar) //if we need to turn right
 			{
 				localStatePackage.direction = 'R'; //set direction to right
@@ -369,26 +345,27 @@ returnPackage scanState()
 			{
 				localStatePackage.direction = 'L'; //set direction to left
 			}
-			
+
 			localStatePackage.prevState = 1; //indicate we were in the scan state
 			localStatePackage.nextState = 2; //we need to go to rotate state
-			
+
 			keepLooping = 0; //false, exit the loop
 			break;
-			
+
 			case 2: //we have finished scanning and have recieved no pulses
 			localStatePackage.prevState = 1; //indicate we were in the scan state
 			localStatePackage.nextState = 3; //we need to go to move state
 			keepLooping = 0; //false, exit the loop
 			break;
-			
+
 			default: //oh shit what the fucks
-			break;		
+			break;
 		}
 	}
-	
+
 	return localStatePackage;
 }
+
 
 void setupTransmit()
 {
@@ -397,15 +374,15 @@ void setupTransmit()
 	* The current values of PER and CCA for this timer will result in the 38Khz oscillating signal needed
 	* in order to generate 1's and 0's that the reciever recognizes. Do not change these values.
 	*/
-	TRANSMIT_OSCILLATOR.CTRLA = TC_CLKSEL_DIV64_gc; //set timer 
+	TRANSMIT_OSCILLATOR.CTRLA = TC_CLKSEL_DIV64_gc; //set timer
 	TRANSMIT_OSCILLATOR.CTRLB = 0x10 | TC_WGMODE_SS_gc; //turn on capture(CCAEN) and set waveform generation mode to PWM
 	TRANSMIT_OSCILLATOR.CTRLC = 0x00; //turn off compares
 	TRANSMIT_OSCILLATOR.CTRLD = 0x00; //turn off events
 	TRANSMIT_OSCILLATOR.CTRLE = 0x00; //turn off byte mode
 	TRANSMIT_OSCILLATOR.PER = 12; //set the top of the period
-	TRANSMIT_OSCILLATOR.CCA = 6; //set the compare register value to achieve 50% duty cycle at 
+	TRANSMIT_OSCILLATOR.CCA = 6; //set the compare register value to achieve 50% duty cycle at
 	TRANSMIT_OSCILLATOR.INTCTRLB = 0x00; //set the CCA interrupt to low priority.
-	
+
 	/*
 	* Timer port F1 configuration
 	*/
@@ -416,7 +393,7 @@ void setupTransmit()
 	TRANSMIT_TIMER.CTRLE = 0x00; //turn off byte mode
 	TRANSMIT_TIMER.PER = 500; //1ms
 	TRANSMIT_TIMER.INTCTRLA = 0x01; //set the overflow interrupt to low priority
-	
+
 	/*
 	* PORT F setup
 	* set direction for pin 1 without upsetting other pins
