@@ -85,12 +85,12 @@ ISR(RTC_OVF_vect)
 ISR(PORTJ_INT0_vect)
 {
 
-	int pushbutton= PORTJ_IN;
+	/*int pushbutton= PORTJ_IN;
 	switch(pushbutton)
 	{
 		case 1:
-			PORTH_OUT= RTC_CNT;
-			break;
+			//PORTH_OUT= RTC_CNT;
+			//break;
 		case 2:
 			//PORTH_OUT= 0;
 			//break;
@@ -103,7 +103,7 @@ ISR(PORTJ_INT0_vect)
 		default:
 			PORTH_OUT= 0;
 			break;
-	}
+	}*/
 }
 
 ISR(PORTJ_INT1_vect)
@@ -212,9 +212,9 @@ int main(void)
 	PMIC_CTRL = PMIC_HILVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm; //set PMIC to on.
 
     PORTJ_DIR= 0x00;
-    PORTJ_INTCTRL= 0x05; // pushbuttons interrupts low
-    PORTJ_INT0MASK= 0x0F;
-    PORTJ_INT1MASK= 0xF0;
+    PORTJ_INTCTRL= 0x00; // pushbuttons interrupts low
+    PORTJ_INT0MASK= 0xFF;
+    PORTJ_INT1MASK= 0x00;
 
     PORTJ_PIN0CTRL= 0x01;
     PORTJ_PIN1CTRL= 0x01;
