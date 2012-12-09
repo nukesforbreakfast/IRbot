@@ -361,7 +361,7 @@ returnPackage scanState()
 			
 			localStatePackage.rotateQuantity = degreeVar; //give the degrees we need to turn
 			
-			if(degreeVar) //if we need to turn right
+			if(degreeSideVar) //if we need to turn right
 			{
 				localStatePackage.direction = 'R'; //set direction to right
 			}
