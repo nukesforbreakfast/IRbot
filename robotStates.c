@@ -311,7 +311,7 @@ returnPackage scanState()
 	* IR input port configuration
 	*/
 	IR_INPUT_PORT.DIR = 0x00; //all pins as input
-	IR_INPUT_PORT.PIN2CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
+	IR_INPUT_PORT.PIN0CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
 	/*
 	* Event System Configuration
 	*/
@@ -332,8 +332,11 @@ returnPackage scanState()
 		{
 			case 0: //we are still scanning
 			break;
+			
+			case 1: //we got a pulse, now check for consistency
+			break;
 
-			case 1: //we got a pulse
+			case 2: //we got a pulse consistently for 10 pulses so get the turn value
 			/*************************************************************
 			* Section of state to handle calculating the degrees to turn *
 			* and put it into the structure to return					 *
@@ -377,7 +380,7 @@ returnPackage scanState()
 			keepLooping = 0; //false, exit the loop
 			break;
 
-			case 2: //we have finished scanning and have recieved no pulses
+			case 3: //we have finished scanning and have received no pulses
 			localStatePackage.prevState = 1; //indicate we were in the scan state
 			localStatePackage.nextState = 3; //we need to go to move state
 			keepLooping = 0; //false, exit the loop

@@ -35,6 +35,8 @@ volatile int turn = 0; //used to handle servo scanning
 
 volatile int swivels = 0; //used to count how many times we have swiveled
 
+volatile int pulses = 0; //uses to count how many correct pulses we have recieved.
+
 ISR(TIMERSONAR1_CCA_vect)
 {
 	compareRegistervalue= TIMERSONAR1_CCA;
@@ -169,7 +171,7 @@ ISR(SERVO_PWM_OVF_VECT)
 
 		if(swivels > 1)
 		{
-			scanVar = 2; //we got no signal, indicate to the function as such
+			scanVar = 3; //we got no signal, indicate to the function as such
 			swivels = 0; //reset swivels
 		}
 		break;
@@ -194,6 +196,15 @@ ISR(IR_PW_CAPTURE_VECT)
 		//do this by turning off the overflow interrupt for TCE0
 		SERVO_PWM.INTCTRLA = 0x00; //all interrupts off
 		scanVar = 1;
+		if(SERVO_PWM.CCA > 500 && SERVO_PWM.CCA < 700) //if the pulse width is within the expected width
+		{
+			++pulses
+			if(pulses > 9) //if we have gotten 10 consistent pulses;
+			{
+				scanVar = 2;
+				pulses = 0; //reset pulses
+			}
+		}
 		break;
 
 		default: //we are in any other state
