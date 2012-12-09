@@ -390,6 +390,12 @@ returnPackage scanState()
 			break;
 		}
 	}
+	/***************************************
+	* Cleanup used timers and other things *
+	* before returning                     *
+	***************************************/
+	IR_PW_CAPTURE.CTRLA = TC_CLKSEL_OFF_gc;
+	SERVO_PWM.CTRLA = TC_CLKSEL_OFF_gc;
 
 	return localStatePackage;
 }
