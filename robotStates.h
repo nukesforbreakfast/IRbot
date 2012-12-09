@@ -1,7 +1,7 @@
 #ifndef ROBOTSTATES_H_INCLUDED
 #define ROBOTSTATES_H_INCLUDED
 #include <avr/io.h>
-//#include <avr/iox128a1.h>
+#include <avr/iox128a1.h>
 #include <avr/interrupt.h>
 #include <avr/AVRX_Clocks.h>
 #include <avr/AVRX_Serial.h>
@@ -10,7 +10,8 @@
 
 #define MOVEFORWARD_OR				0b10100000
 #define MOVEFORWARD_AND				0b10101111
-#define STOPMOVING					0b00001111
+#define STOPMOVING_AND				0b00001111
+#define STOPMOVING_AND				0b11110000
 
 #define ROTATERIGHT_OR				0b01100000
 #define ROTATERIGHT_AND				0b01101111
