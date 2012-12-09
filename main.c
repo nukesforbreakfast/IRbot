@@ -211,12 +211,15 @@ int main(void)
 
 	PMIC_CTRL = PMIC_HILVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm; //set PMIC to on.
 
-    PORTJ_DIR= 0x00;
-    PORTJ_INTCTRL= 0x05; // pushbuttons interrupts low
-    PORTJ_INT0MASK= 0x0F;
-    PORTJ_INT1MASK= 0xF0;
 
-    PORTJ_PIN0CTRL= 0x01;
+	/*
+    PORTJ_DIR= 0x00;
+    PORTJ_INTCTRL= 0x00; // pushbuttons interrupts low
+    PORTJ_INT0MASK= 0xFF;
+    PORTJ_INT1MASK= 0x00;
+
+
+    //PORTJ_PIN0CTRL= 0x01;
     PORTJ_PIN1CTRL= 0x01;
     PORTJ_PIN2CTRL= 0x01;
     PORTJ_PIN3CTRL= 0x01;
@@ -224,6 +227,7 @@ int main(void)
     PORTJ_PIN5CTRL= 0x01;
     PORTJ_PIN6CTRL= 0x01;
     PORTJ_PIN7CTRL= 0x01;
+    */
 
     PORTH_DIR= 0xFF;
     PORTH_OUT= 0x00;
