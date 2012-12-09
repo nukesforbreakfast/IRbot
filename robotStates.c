@@ -28,16 +28,19 @@ returnPackage movingState()
 	setupMotors();
 	enableSonar();
 
-	//set RTC to count roughly 5 seconds
+	//set RTC to count roughly x seconds
 	//setRTC(2000);
 
-	RTC_PER= 2000; // should be roughly x milliseconds
+	//RTC_PER= 2000; // set to 10,000 value
 
-	CLK_RTCCTRL=0b00000101;
+	//set RTC to count roughly 2 seconds
+	//RTC_COMP= 2000;
 
-	RTC_INTCTRL= 0x02; //set overflow interrupt priority to med
+	//CLK_RTCCTRL=0b00000101;
 
-	RTC_CTRL= 0x01; //set clock prescaler to one
+	//RTC_INTCTRL= 0x02; //set compare interrupt priority to med
+
+	//RTC_CTRL= 0x01; //set clock prescaler to one
 
 
 
@@ -127,13 +130,13 @@ returnPackage rotateState(returnPackage localStateVar)
 	if (localStateVar.rotateQuantity > 0)
 	{
 		//setRTC(localStateVar.rotateQuantity);
-		RTC_PER= 500; // should be roughly x milliseconds
+		//RTC_PER= 10000;
 
-		CLK_RTCCTRL=0b00000101;
+		//CLK_RTCCTRL=0b00000101;
 
-		RTC_INTCTRL= 0x02; //set overflow interrupt priority to med
+		//RTC_INTCTRL= 0x02; //set compare interrupt priority to med
 
-		RTC_CTRL= 0x01; //set clock prescaler to one
+		//RTC_CTRL= 0x01; //set clock prescaler to one
 	}
 
 	do
@@ -358,7 +361,7 @@ returnPackage scanState()
 			PORTH_OUT |= degreeSideVar << 7;
 
 			localStatePackage.rotateQuantity = degreeVar; //give the degrees we need to turn
-			
+
 			if(degreeSideVar) //if we need to turn right
 			{
 				localStatePackage.direction = 'R'; //set direction to right
