@@ -21,17 +21,29 @@ returnPackage movingState()
 	returnPackage localStateVar;
 
 	int haltFlag= 0;
+	sonarFlag= 0;
+	timeOutFlag= 0;
+
 
 	setupMotors();
 	enableSonar();
 
 	//set RTC to count roughly 5 seconds
-	//setRTC(5000);
+	//setRTC(2000);
+
+	RTC_PER= 2000; // should be roughly x milliseconds
+
+	CLK_RTCCTRL=0b00000101;
+
+	RTC_INTCTRL= 0x02; //set overflow interrupt priority to med
+
+	RTC_CTRL= 0x01; //set clock prescaler to one
+
+
 
 	// motors A, B will have full duty cycle
     PWMTIMER_CC1= 10000;
     PWMTIMER_CC2= 10000;
-
 
 	while(haltFlag == 0)
 	{
@@ -81,7 +93,11 @@ returnPackage movingState()
 //**************************************************************************************************
 returnPackage rotateState(returnPackage localStateVar)
 {
+	RTC_CTRL= 0x00; //turn off RTC
+
 	int rotateFlag= 0;
+	stopRotateTimerFlag= 0;
+	stopRotateSonarFlag= 0;
 
 	setupMotors();
 	enableSonar();
@@ -94,13 +110,11 @@ returnPackage rotateState(returnPackage localStateVar)
             // if 0b11000011 is break mode, test for rotate left by forcing bits 3,4 low
             MOTORDIR_OUT |= ROTATELEFT_OR;
             MOTORDIR_OUT &= ROTATELEFT_AND;
-            RTC_CTRL= 0x00;
             break;
         case 'r':
         case 'R':
             MOTORDIR_OUT |= ROTATERIGHT_OR;
             MOTORDIR_OUT &= ROTATERIGHT_AND;
-            //set rtc
             break;
         default:
             break;
@@ -112,12 +126,19 @@ returnPackage rotateState(returnPackage localStateVar)
 
 	if (localStateVar.rotateQuantity > 0)
 	{
-		setRTC(localStateVar.rotateQuantity);
+		//setRTC(localStateVar.rotateQuantity);
+		RTC_PER= 500; // should be roughly x milliseconds
+
+		CLK_RTCCTRL=0b00000101;
+
+		RTC_INTCTRL= 0x02; //set overflow interrupt priority to med
+
+		RTC_CTRL= 0x01; //set clock prescaler to one
 	}
 
 	do
 	{
-		rotateFlag= stopRotateFlag;
+		rotateFlag= stopRotateTimerFlag | stopRotateSonarFlag;
 
 	}while(rotateFlag == 0);
 
@@ -127,13 +148,14 @@ returnPackage rotateState(returnPackage localStateVar)
 	// test for break mode break mode
 	MOTORDIR_OUT &= STOPMOVING_AND; // 0x3C
 
-    switch(stopRotateFlag)
+    switch(rotateFlag)
     {
         case 1:
             localStateVar.nextState= 3;
             break;
         case 2:
-            localStateVar.nextState= 3;
+        case 3:
+            localStateVar.nextState= 1;
             break;
         default:
             break;

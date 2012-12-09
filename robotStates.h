@@ -14,10 +14,10 @@
 #define STOPMOVING_AND				0b00001111
 
 
-#define ROTATERIGHT_OR				0b01100000
-#define ROTATERIGHT_AND				0b01101111
-#define ROTATELEFT_OR				0b10010000
-#define ROTATELEFT_AND				0b10011111
+#define ROTATERIGHT_OR				0b10010000
+#define ROTATERIGHT_AND				0b10011111
+#define ROTATELEFT_OR				0b01100000
+#define ROTATELEFT_AND				0b01101111
 
 
 #define MOTORDIR_DIR				PORTE_DIR
@@ -84,7 +84,8 @@
 /*extern variables go here*/
 extern volatile int timeOutFlag;
 extern volatile int sonarFlag;
-extern volatile int stopRotateFlag;
+extern volatile int stopRotateTimerFlag;
+extern volatile int stopRotateSonarFlag;
 extern volatile int scanVar;
 
 typedef struct

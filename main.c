@@ -12,14 +12,17 @@
 //used for storing CCX register values
 volatile unsigned int compareRegistervalue= 0;
 
-// 0=move, 2=stop
-volatile int timeOutFlag;
+// used in RTC ISR and moving state. 0=move, 2=stop
+volatile int timeOutFlag= 0;
 
-// state 3(0=move, 1=stop), state 2(0= stop, 1=rotate)
-volatile int sonarFlag;
+// used in TIMERSONAR ISR, and in moving state. state 3(0=move, 1=stop), state 2(0= stop, 1=rotate)
+volatile int sonarFlag= 0;
 
-// 0=move, 1= sonar stop, 2= timeout stop
-volatile int stopRotateFlag;
+// used in RTC ISR and rotate state. 0=move, 1= timeout stop
+volatile int stopRotateTimerFlag= 0;
+
+// used in TIMERSONAR ISR, and in rotate state. 0=move, 1= sonar stop
+volatile int stopRotateSonarFlag= 0;
 
 // 0=start, 1=scanning, 2= rotating, 3= moving
 returnPackage robotStateVar;
@@ -43,13 +46,13 @@ ISR(TIMERSONAR1_CCA_vect)
 			if(compareRegistervalue <= 870)
 			{
 				sonarFlag= 1;
-				stopRotateFlag= 0;
+				//stopRotateSonarFlag= 0;
 
 			}
 			else if(compareRegistervalue > 1740)
 			{
-				sonarFlag= 0;
-				stopRotateFlag= 2;
+				//sonarFlag= 0;
+				stopRotateSonarFlag= 1;
 			}
 			break;
 		default:
@@ -67,10 +70,10 @@ ISR(RTC_OVF_vect)
 	switch(robotStateVar.nextState)
 	{
 	    case 2://rotate state
-            stopRotateFlag= 1;
+            stopRotateTimerFlag= 2;
             break;
 	    case 3://moving state
-            timeOutFlag= 1;
+            timeOutFlag= 2;
             break;
         default:
 			//return;
@@ -86,16 +89,16 @@ ISR(PORTJ_INT0_vect)
 	switch(pushbutton)
 	{
 		case 1:
-			PORTH_OUT= MOTORDIR_OUT;
+			PORTH_OUT= RTC_CNT;
 			break;
 		case 2:
-			robotStateVar.nextState= 1;
-			break;
-		case 4:
-			//;
+			//PORTH_OUT= 0;
 			//break;
+		case 4:
+			PORTH_OUT= MOTORDIR_OUT;
+			break;
 		case 8:
-			//;
+			//robotStateVar.nextState= 1;
 			//break;
 		default:
 			PORTH_OUT= 0;
@@ -164,7 +167,7 @@ ISR(SERVO_PWM_OVF_VECT)
 			}
 		}
 
-		if(swivels > 1)
+		if(swivels > 3)
 		{
 			scanVar = 2; //we got no signal, indicate to the function as such
 			swivels = 0; //reset swivels
