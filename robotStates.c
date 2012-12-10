@@ -405,6 +405,7 @@ returnPackage scanState()
 	IR_PW_CAPTURE.CTRLA = TC_CLKSEL_OFF_gc;
 	SERVO_PWM.CTRLA = TC_CLKSEL_OFF_gc;
 	PW_TIMEOUT.CTRLA = TC_CLKSEL_OFF_gc;
+	scanVar = 0; //reset scan var
 
 	return localStatePackage;
 }
