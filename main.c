@@ -12,16 +12,22 @@
 volatile unsigned int compareRegistervalue= 0;
 
 // used in RTC ISR and moving state. 0=move, 2=stop
-volatile int timeOutFlag= 0;
+volatile unsigned char timeOutFlag= 0;
 
-// used in TIMERSONAR ISR, and in moving state. state 3(0=move, 1=stop), state 2(0= stop, 1=rotate)
-volatile int sonarFlag= 0;
+// used in TIMERSONAR1 ISR, and in moving state. state 3(0=move, 1=stop), state 2(0= stop, 1=rotate)
+volatile unsigned char sonarFlag1= 0;
+
+// used in TIMERSONAR2 ISR, and in moving state. state 3(0=move, 1=stop), state 2(0= stop, 1=rotate)
+volatile unsigned char sonarFlag2= 0;
 
 // used in RTC ISR and rotate state. 0=move, 1= timeout stop
-volatile int stopRotateTimerFlag= 0;
+volatile unsigned char stopRotateTimerFlag= 0;
 
-// used in TIMERSONAR ISR, and in rotate state. 0=move, 1= sonar stop
-volatile int stopRotateSonarFlag= 0;
+// used in TIMERSONAR1 ISR, and in rotate state. 0=move, 1= sonar stop
+volatile unsigned char stopRotateSonarFlag1= 0;
+
+// used in TIMERSONAR2 ISR, and in rotate state. 0=move, 1= sonar stop
+volatile unsigned char stopRotateSonarFlag2= 0;
 
 // 0=start, 1=scanning, 2= rotating, 3= moving
 returnPackage robotStateVar;
@@ -46,43 +52,103 @@ ISR(TIMERSONAR1_CCA_vect)
 		case 3://moving state
 			if(compareRegistervalue <= 870)
 			{
-				sonarFlag= 1;
-				//stopRotateSonarFlag= 0;
+				sonarFlag1= 2;
+				stopRotateSonarFlag1= 0;
 
 			}
 			else if(compareRegistervalue > 1740)
 			{
-				//sonarFlag= 0;
-				stopRotateSonarFlag= 1;
+				sonarFlag1= 0;
+				stopRotateSonarFlag1= 2;
 			}
 			break;
 		default:
 			//return;
 			break;
 	}
-
-	//PORTH_OUT= compareRegistervalue/72.5;
-
-	//PORTH_OUT= haltFlag;
 }
 
-ISR(RTC_OVF_vect)
+
+ISR(TIMERSONAR2_CCA_vect)
+{
+	compareRegistervalue= TIMERSONAR2_CCA;
+
+	switch(robotStateVar.nextState)
+	{
+		case 2://rotate state
+		case 3://moving state
+			if(compareRegistervalue <= 200)
+			{
+				sonarFlag2= 4;
+				stopRotateSonarFlag2= 0;
+
+			}
+			else if(compareRegistervalue > 400)
+			{
+				sonarFlag2= 0;
+				stopRotateSonarFlag2= 4;
+			}
+			break;
+		default:
+			//return;
+			break;
+	}		
+}
+
+
+ISR(TCD0_OVF_vect)
 {
 	switch(robotStateVar.nextState)
 	{
+		case 2://rotate state
+		stopRotateTimerFlag++;
+		break;
+		case 3://moving state
+		timeOutFlag++;
+		break;
+		default:
+		//return;
+		break;
+	}	
+}
+
+
+/*
+
+ISR(RTC_OVF_vect)
+{
+	if(robotStateVar.nextState == 3)
+	{
+		timeOutFlag= 1;
+	}
+}
+
+
+ISR(RTC_COMP_vect)
+{
+	if(robotStateVar.nextState == 2)
+	{
+		stopRotateTimerFlag= 1;
+	}
+	
+	
+	switch(robotStateVar.nextState)
+	{
 	    case 2://rotate state
-            stopRotateTimerFlag= 2;
+            stopRotateTimerFlag= 1;
             break;
 	    case 3://moving state
-            timeOutFlag= 2;
+            timeOutFlag= 1;
             break;
         default:
 			//return;
             break;
 	}
-
-
+	
 }
+*/
+
+
 ISR(PORTJ_INT0_vect)
 {
 

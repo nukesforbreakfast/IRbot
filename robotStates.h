@@ -83,10 +83,12 @@
 #define TRANSMIT_TIMER			TCF1
 
 /*extern variables go here*/
-extern volatile int timeOutFlag;
-extern volatile int sonarFlag;
-extern volatile int stopRotateTimerFlag;
-extern volatile int stopRotateSonarFlag;
+extern volatile unsigned char timeOutFlag;
+extern volatile unsigned char sonarFlag1;
+extern volatile unsigned char sonarFlag2;
+extern volatile unsigned char stopRotateTimerFlag;
+extern volatile unsigned char stopRotateSonarFlag1;
+extern volatile unsigned char stopRotateSonarFlag2;
 extern volatile int scanVar;
 
 typedef struct

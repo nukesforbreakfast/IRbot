@@ -294,7 +294,7 @@ void enableSonar()
 	SONAR2OUTPORT_PINCTRL= 0x00; // set input sense to both edges
 
 	EVSYS_CH1MUX= 0x78;//0b01100010 set event channel 1 to portf pin 0
-	EVSYS_CH3MUX= 0x7C;//0b01100010 set event channel 1 to port7 pin 4
+	EVSYS_CH3MUX= 0x7C;//0b01100010 set event channel 1 to portf pin 4
 
 	EVSYS_CH1CTRL=0x00; // set event channel 1 to no sample filtering
 	EVSYS_CH3CTRL=0x00; // set event channel 3 to no sample filtering
@@ -314,6 +314,9 @@ void enableSonar()
 	TIMERSONAR2_CTRLD = 0xCB; //set events to Pulse Width capture, no timer delay, and listen to event channel 1
 	TIMERSONAR2_CTRLE = 0x00; //turn off byte mode
 	TIMERSONAR2_PER = 0xFFFF; //set the top of the period to max 16-bit value
+	
+	TIMERSONAR2_INTCTRLA= 0x00; // turn other interrupts off
+	TIMERSONAR2_INTCTRLB= 0x03; //set capture interrupt to high
 
 	// set pin 1 direction to output
 	SONAR1ENABLE_DIR |= 0b00000010; // 0x02;
