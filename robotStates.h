@@ -107,19 +107,19 @@ void enableSonar();
 
 void setupMotors();
 
-returnPackage rotateState(returnPackage);
+void rotateState(returnPackage*);
 
-returnPackage movingState(returnPackage);
+void movingState(returnPackage*);
 
 /*
 *This is the function to handle the servo scanning.
 */
-returnPackage scanState(returnPackage);
+void scanState(returnPackage*);
 
 /*
 *This is the function to handle attempting to acquire the signal
 */
-returnPackage acquireState();
+void acquireState();
 
 /*
 * This is a function to set up LED transmitters

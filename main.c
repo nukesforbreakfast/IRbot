@@ -8,6 +8,9 @@
 #include <avr/AVRX_Serial.h>
 #include "robotStates.h"
 
+//int direction = 0; //does this break?
+int jose = 0;
+
 //used for storing CCX register values
 volatile unsigned int compareRegistervalue= 0;
 
@@ -342,15 +345,15 @@ int main(void)
 		{
 			case 1: //scanState
 				PORTH_OUT= 1;
-				robotStateVar = scanState(robotStateVar);
+				scanState(&robotStateVar);
 				break;
 			case 2://rotate state
 				PORTH_OUT= 2;
-				robotStateVar=rotateState(robotStateVar);
+				rotateState(&robotStateVar);
 				break;
 			case 3://moving state
 				PORTH_OUT= 4;
-				robotStateVar=movingState(robotStateVar);
+				movingState(&robotStateVar);
 				break;
 			default:
 				PORTH_OUT= 0;

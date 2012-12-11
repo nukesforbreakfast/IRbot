@@ -15,7 +15,7 @@
 
 //in this state robot is either moving forward, sonar is active
 //**************************************************************************************************
-returnPackage movingState(returnPackage localStateVar)
+void movingState(returnPackage* localStateVar)
 {
 	//returnPackage localStateVar;
 
@@ -32,7 +32,7 @@ returnPackage movingState(returnPackage localStateVar)
 
 	//RTC_CTRL= 0x00; //turn off RTC
 		
-	//setRTC(localStateVar.rotateQuantity);
+	//setRTC(localStateVar->rotateQuantity);
 	//RTC_PER= 2000;
 		
 	//RTC_COMP= 500;
@@ -88,35 +88,34 @@ returnPackage movingState(returnPackage localStateVar)
 	{
 		case 1:
 			//go to rotate right x degrees
-			localStateVar.nextState= 2;
-			localStateVar.direction= localStateVar.globalTimeoutDirection;
-			//localStateVar.direction= 'R';
-			localStateVar.rotateQuantity= 500;
+			localStateVar->nextState= 2;
+			localStateVar->direction= localStateVar->globalTimeoutDirection;
+			//localStateVar->direction= 'R';
+			localStateVar->rotateQuantity= 500;
 			break;		
 		case 2:
 		case 3:
 			//go to rotate until no obstacle
-			localStateVar.direction= 'R';
-			localStateVar.nextState= 2;
-			localStateVar.rotateQuantity= 0;
+			localStateVar->direction= 'R';
+			localStateVar->nextState= 2;
+			localStateVar->rotateQuantity= 0;
 			break;
 		case 4:
 		case 5:
 		case 7:
 			//go to rotate until no obstacle
-			localStateVar.direction= 'L';
-			localStateVar.nextState= 2;
-			localStateVar.rotateQuantity= 0;
+			localStateVar->direction= 'L';
+			localStateVar->nextState= 2;
+			localStateVar->rotateQuantity= 0;
 			break;
 		default:
 			break;
 	}
 	
 	
-	localStateVar.prevState= 3;
+	localStateVar->prevState= 3;
 	SONAR1ENABLE_OUT &= 0b11111101;
 	SONAR2ENABLE_OUT &= 0b11110111;
-    return localStateVar;
 }
 
 
@@ -124,7 +123,7 @@ returnPackage movingState(returnPackage localStateVar)
 //**************************************************************************************************
 //robot is rotating  until haltFlag does not equal 2
 //**************************************************************************************************
-returnPackage rotateState(returnPackage localStateVar)
+void rotateState(returnPackage* localStateVar)
 {
 	//unsigned char rotateFlag= 0;
 	//unsigned char object= 0;
@@ -138,21 +137,21 @@ returnPackage rotateState(returnPackage localStateVar)
 	//enableSonar();
 
 
-	switch(localStateVar.direction)
+	switch(localStateVar->direction)
 	{
 		case 'l':
 		case 'L':
 		// if 0b11000011 is break mode, test for rotate left by forcing bits 3,4 low
 		MOTORDIR_OUT |= ROTATELEFT_OR;
 		MOTORDIR_OUT &= ROTATELEFT_AND;
-		localStateVar.globalTimeoutDirection= 'R';
+		localStateVar->globalTimeoutDirection= 'R';
 		//globalTimeOutFlagDirection= 'R';
 		break;
 		case 'r':
 		case 'R':
 		MOTORDIR_OUT |= ROTATERIGHT_OR;
 		MOTORDIR_OUT &= ROTATERIGHT_AND;
-		localStateVar.globalTimeoutDirection= 'L';
+		localStateVar->globalTimeoutDirection= 'L';
 		//globalTimeOutFlagDirection= 'L';
 		break;
 		default:
@@ -164,11 +163,11 @@ returnPackage rotateState(returnPackage localStateVar)
 	PWMTIMER_CC2= 10000;
 
 	//sonar triggered rotation
-	if (localStateVar.rotateQuantity <= 0)
+	if (localStateVar->rotateQuantity <= 0)
 	{
 		enableSonar();
 		
-		switch(localStateVar.direction)
+		switch(localStateVar->direction)
 		{
 			case 'R':
 			case 'r':
@@ -189,7 +188,7 @@ returnPackage rotateState(returnPackage localStateVar)
 			default:
 			break;
 		}
-		localStateVar.nextState= 3;
+		localStateVar->nextState= 3;
 		SONAR1ENABLE_OUT &= 0b11111101;
 		SONAR2ENABLE_OUT &= 0b11110111;
 	}
@@ -212,7 +211,7 @@ returnPackage rotateState(returnPackage localStateVar)
 		
 		//RTC_CTRL= 0x00; //turn off RTC
 		
-		//setRTC(localStateVar.rotateQuantity);
+		//setRTC(localStateVar->rotateQuantity);
 		//RTC_PER= 2000;
 		
 		//RTC_COMP= 500;
@@ -229,7 +228,7 @@ returnPackage rotateState(returnPackage localStateVar)
 			;
 		}
 		
-		localStateVar.nextState= 1;
+		localStateVar->nextState= 1;
 		//RTC_CTRL= 0x00;
 		//RTC_CNT= 0;
 		TCD0_CTRLA= 0;
@@ -238,10 +237,9 @@ returnPackage rotateState(returnPackage localStateVar)
 
 	//break mode
 	MOTORDIR_OUT &= STOPMOVING_AND;
-	localStateVar.prevState= 2;
-	localStateVar.direction= 'z';
-	localStateVar.rotateQuantity= 0;
-	return localStateVar;
+	localStateVar->prevState= 2;
+	localStateVar->direction= 'z';
+	localStateVar->rotateQuantity= 0;
 
 }
 
@@ -353,7 +351,7 @@ void setRTC(int topValue)
 	RTC_CNT= 0;
 }
 
-returnPackage scanState(returnPackage localStatePackage)
+void scanState(returnPackage* localStatePackage)
 {
 	/************************************************
 	* PWM Setup for the servo using PORTE, TCE0_CCA *
@@ -449,26 +447,26 @@ returnPackage scanState(returnPackage localStatePackage)
 			PORTH_OUT = degreeVar;
 			PORTH_OUT |= degreeSideVar << 7;
 
-			localStatePackage.rotateQuantity = degreeVar; //give the degrees we need to turn
+			localStatePackage->rotateQuantity = degreeVar; //give the degrees we need to turn
 
 			if(degreeSideVar) //if we need to turn right
 			{
-				localStatePackage.direction = 'R'; //set direction to right
+				localStatePackage->direction = 'R'; //set direction to right
 			}
 			else //if we need to turn left
 			{
-				localStatePackage.direction = 'L'; //set direction to left
+				localStatePackage->direction = 'L'; //set direction to left
 			}
 
-			localStatePackage.prevState = 1; //indicate we were in the scan state
-			localStatePackage.nextState = 2; //we need to go to rotate state
+			localStatePackage->prevState = 1; //indicate we were in the scan state
+			localStatePackage->nextState = 2; //we need to go to rotate state
 
 			keepLooping = 0; //false, exit the loop
 			break;
 
 			case 3: //we have finished scanning and have received no pulses
-			localStatePackage.prevState = 1; //indicate we were in the scan state
-			localStatePackage.nextState = 3; //we need to go to move state
+			localStatePackage->prevState = 1; //indicate we were in the scan state
+			localStatePackage->nextState = 3; //we need to go to move state
 			keepLooping = 0; //false, exit the loop
 			break;
 
@@ -484,8 +482,6 @@ returnPackage scanState(returnPackage localStatePackage)
 	SERVO_PWM.CTRLA = TC_CLKSEL_OFF_gc;
 	PW_TIMEOUT.CTRLA = TC_CLKSEL_OFF_gc;
 	scanVar = 0; //reset scan var
-
-	return localStatePackage;
 }
 
 
