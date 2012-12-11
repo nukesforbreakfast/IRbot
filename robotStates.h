@@ -1,7 +1,6 @@
 #ifndef ROBOTSTATES_H_INCLUDED
 #define ROBOTSTATES_H_INCLUDED
 #include <avr/io.h>
-#include <avr/iox128a1.h>
 #include <avr/interrupt.h>
 #include <avr/AVRX_Clocks.h>
 #include <avr/AVRX_Serial.h>
@@ -95,6 +94,7 @@ typedef struct
 	unsigned char prevState;
 	unsigned char nextState;
 	char direction;
+	char globalTimeoutDirection;
 	unsigned int rotateQuantity;
 }returnPackage;
 
@@ -107,12 +107,12 @@ void setupMotors();
 
 returnPackage rotateState(returnPackage);
 
-returnPackage movingState();
+returnPackage movingState(returnPackage);
 
 /*
 *This is the function to handle the servo scanning.
 */
-returnPackage scanState();
+returnPackage scanState(returnPackage);
 
 /*
 *This is the function to handle attempting to acquire the signal

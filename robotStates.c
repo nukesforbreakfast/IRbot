@@ -1,6 +1,5 @@
 //#include <stdlib.h>
 #include <avr/io.h>
-#include <avr/iox128a1.h>
 #include <avr/interrupt.h>
 #include <avr/AVRX_Clocks.h>
 #include <avr/AVRX_Serial.h>
@@ -16,25 +15,27 @@
 
 //in this state robot is either moving forward, sonar is active
 //**************************************************************************************************
-returnPackage movingState()
+returnPackage movingState(returnPackage localStateVar)
 {
-	returnPackage localStateVar;
+	//returnPackage localStateVar;
 
-	int haltFlag= 0;
-	sonarFlag= 0;
+	unsigned char haltFlag= 0;
+	sonarFlag1= 0;
+	sonarFlag2= 0;
 	timeOutFlag= 0;
+	//unsigned long accum= 0;
 
 
 	setupMotors();
 	enableSonar();
 
-	//set RTC to count roughly x seconds
-	//setRTC(2000);
 
-	//RTC_PER= 2000; // set to 10,000 value
-
-	//set RTC to count roughly 2 seconds
-	//RTC_COMP= 2000;
+	//RTC_CTRL= 0x00; //turn off RTC
+		
+	//setRTC(localStateVar.rotateQuantity);
+	//RTC_PER= 2000;
+		
+	//RTC_COMP= 500;
 
 	//CLK_RTCCTRL=0b00000101;
 
@@ -42,50 +43,79 @@ returnPackage movingState()
 
 	//RTC_CTRL= 0x01; //set clock prescaler to one
 
-
-
-	// motors A, B will have full duty cycle
     PWMTIMER_CC1= 10000;
     PWMTIMER_CC2= 10000;
 
+	TCD0_CTRLB= 0;
+	TCD0_CTRLD= 0;
+	TCD0_CTRLE= 0;
+	TCD0_PER= 3125;
+	
+	//set overflow interrupt to medium
+	TCD0_INTCTRLA= 0x02;
+	
+	//set compare interrupts off
+	TCD0_INTCTRLB= 0x00;
+
+	// motors A, B will have full duty cycle
+
+	
+	TCD0_CTRLA= 0x07;
+
 	while(haltFlag == 0)
 	{
-		haltFlag= sonarFlag | timeOutFlag;
+		
+		haltFlag= sonarFlag1 | sonarFlag2 | (timeOutFlag>> 6);
+		/*
+		accum++;
+		if(accum >= 24000000)
+		{
+			haltFlag |= 1;
+		}
+		*/
 
 	};
 
-	RTC_CTRL= 0x00;
-    RTC_CNT= 0;
+	//RTC_CTRL= 0x00;
+    //RTC_CNT= 0;
+	TCD0_CTRLA= 0;
+	TCD0_CNT= 0;
+	
 
+	MOTORDIR_OUT &= STOPMOVING_AND;
 
 	switch(haltFlag)
 	{
 		case 1:
-			// break
-			//MOTORDIR_OUT |= 0b00111100; // 0x3C
-			MOTORDIR_OUT &= STOPMOVING_AND;
-
-			//go to rotate left until no obstacle
-			localStateVar.nextState= 2;
-			localStateVar.direction= 'L';
-			localStateVar.rotateQuantity= 0;
-			break;
-		case 2:
-		case 3:
-			// break
-			MOTORDIR_OUT &= STOPMOVING_AND;
-
 			//go to rotate right x degrees
 			localStateVar.nextState= 2;
-			localStateVar.direction= 'R';
+			localStateVar.direction= localStateVar.globalTimeoutDirection;
+			//localStateVar.direction= 'R';
 			localStateVar.rotateQuantity= 500;
+			break;		
+		case 2:
+		case 3:
+			//go to rotate until no obstacle
+			localStateVar.direction= 'R';
+			localStateVar.nextState= 2;
+			localStateVar.rotateQuantity= 0;
+			break;
+		case 4:
+		case 5:
+		case 7:
+			//go to rotate until no obstacle
+			localStateVar.direction= 'L';
+			localStateVar.nextState= 2;
+			localStateVar.rotateQuantity= 0;
 			break;
 		default:
 			break;
 	}
-
+	
+	
 	localStateVar.prevState= 3;
-	SONAR1ENABLE_OUT &= 0b11111110;
+	SONAR1ENABLE_OUT &= 0b11111101;
+	SONAR2ENABLE_OUT &= 0b11110111;
     return localStateVar;
 }
 
@@ -96,73 +126,119 @@ returnPackage movingState()
 //**************************************************************************************************
 returnPackage rotateState(returnPackage localStateVar)
 {
-	RTC_CTRL= 0x00; //turn off RTC
-
-	int rotateFlag= 0;
+	//unsigned char rotateFlag= 0;
+	//unsigned char object= 0;
+	//unsigned char objectGone= 0;
 	stopRotateTimerFlag= 0;
-	stopRotateSonarFlag= 0;
+	//stopRotateSonarFlag1= 0;
+	//stopRotateSonarFlag2= 0;
+	//unsigned long accum= 0;
 
 	setupMotors();
-	enableSonar();
+	//enableSonar();
 
 
-    switch(localStateVar.direction)
-    {
-        case 'l':
-        case 'L':
-            // if 0b11000011 is break mode, test for rotate left by forcing bits 3,4 low
-            MOTORDIR_OUT |= ROTATELEFT_OR;
-            MOTORDIR_OUT &= ROTATELEFT_AND;
-            break;
-        case 'r':
-        case 'R':
-            MOTORDIR_OUT |= ROTATERIGHT_OR;
-            MOTORDIR_OUT &= ROTATERIGHT_AND;
-            break;
-        default:
-            break;
-    }
-
-    // motors A, B will have full duty cycle
-    PWMTIMER_CC1= 10000;
-    PWMTIMER_CC2= 10000;
-
-	if (localStateVar.rotateQuantity > 0)
+	switch(localStateVar.direction)
 	{
+		case 'l':
+		case 'L':
+		// if 0b11000011 is break mode, test for rotate left by forcing bits 3,4 low
+		MOTORDIR_OUT |= ROTATELEFT_OR;
+		MOTORDIR_OUT &= ROTATELEFT_AND;
+		localStateVar.globalTimeoutDirection= 'R';
+		//globalTimeOutFlagDirection= 'R';
+		break;
+		case 'r':
+		case 'R':
+		MOTORDIR_OUT |= ROTATERIGHT_OR;
+		MOTORDIR_OUT &= ROTATERIGHT_AND;
+		localStateVar.globalTimeoutDirection= 'L';
+		//globalTimeOutFlagDirection= 'L';
+		break;
+		default:
+		break;
+	}
+
+	// motors A, B will have full duty cycle
+	PWMTIMER_CC1= 10000;
+	PWMTIMER_CC2= 10000;
+
+	//sonar triggered rotation
+	if (localStateVar.rotateQuantity <= 0)
+	{
+		enableSonar();
+		
+		switch(localStateVar.direction)
+		{
+			case 'R':
+			case 'r':
+			while(stopRotateSonarFlag1 == 0)
+			{
+				;
+			}
+			break;
+			
+			case 'L':
+			case 'l':
+			while(stopRotateSonarFlag2 == 0)
+			{
+				;
+			}
+			break;
+			
+			default:
+			break;
+		}
+		localStateVar.nextState= 3;
+		SONAR1ENABLE_OUT &= 0b11111101;
+		SONAR2ENABLE_OUT &= 0b11110111;
+	}
+	else
+	{
+		
+		
+		TCD0_CTRLB= 0;
+		TCD0_CTRLD= 0;
+		TCD0_CTRLE= 0;
+		TCD0_PER= 3125;
+		
+		//set overflow interrupt to medium
+		TCD0_INTCTRLA= 0x02;
+		
+		//set compare interrupts off
+		TCD0_INTCTRLB= 0x00;
+		
+		TCD0_CTRLA= 0x07;
+		
+		//RTC_CTRL= 0x00; //turn off RTC
+		
 		//setRTC(localStateVar.rotateQuantity);
-		//RTC_PER= 10000;
+		//RTC_PER= 2000;
+		
+		//RTC_COMP= 500;
 
 		//CLK_RTCCTRL=0b00000101;
 
-		//RTC_INTCTRL= 0x02; //set compare interrupt priority to med
+		//RTC_INTCTRL= 0x08; //set compare interrupt priority to med
 
 		//RTC_CTRL= 0x01; //set clock prescaler to one
+		
+		//after while loop
+		while(stopRotateTimerFlag < 11)
+		{
+			;
+		}
+		
+		localStateVar.nextState= 1;
+		//RTC_CTRL= 0x00;
+		//RTC_CNT= 0;
+		TCD0_CTRLA= 0;
+		TCD0_CNT= 0;
 	}
 
-	do
-	{
-		rotateFlag= stopRotateTimerFlag | stopRotateSonarFlag;
-
-	}while(rotateFlag == 0);
-
-	RTC_CTRL= 0x00;
-    RTC_CNT= 0;
-
-	// test for break mode break mode
-	MOTORDIR_OUT &= STOPMOVING_AND; // 0x3C
-
-    switch(rotateFlag)
-    {
-        case 1:
-            localStateVar.nextState= 3;
-            break;
-        case 2:
-        case 3:
-            localStateVar.nextState= 1;
-            break;
-        default:
-            break;
-    }
+	//break mode
+	MOTORDIR_OUT &= STOPMOVING_AND;
+	localStateVar.prevState= 2;
 	localStateVar.direction= 'z';
 	localStateVar.rotateQuantity= 0;
 	return localStateVar;
@@ -274,7 +350,7 @@ void setRTC(int topValue)
 	RTC_CNT= 0;
 }
 
-returnPackage scanState()
+returnPackage scanState(returnPackage localStatePackage)
 {
 	/************************************************
 	* PWM Setup for the servo using PORTE, TCE0_CCA *
@@ -330,7 +406,6 @@ returnPackage scanState()
 	* Locally Used Variables *
 	*************************/
 	int keepLooping = 1;//true
-	returnPackage localStatePackage; //local struct to return at end of function
 	int degreeVar = 0; //used for seeing which degree the servo is at.
 	int degreeSideVar = 0; //used for determining left or right, 0 = left, 1 = right
 

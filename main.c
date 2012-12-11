@@ -3,7 +3,6 @@
 
 //#include <stdlib.h>
 #include <avr/io.h>
-#include <avr/iox128a1.h>
 #include <avr/interrupt.h>
 #include <avr/AVRX_Clocks.h>
 #include <avr/AVRX_Serial.h>
@@ -267,6 +266,8 @@ int main(void)
 
 	sei(); //enable interrupt system
 
+	robotStateVar.globalTimeoutDirection= 'R';
+
 	robotStateVar.nextState= 1;
     while(1)
     {
@@ -275,7 +276,7 @@ int main(void)
 		{
 			case 1: //scanState
 				PORTH_OUT= 1;
-				robotStateVar = scanState();
+				robotStateVar = scanState(robotStateVar);
 				break;
 			case 2://rotate state
 				PORTH_OUT= 2;
@@ -283,7 +284,7 @@ int main(void)
 				break;
 			case 3://moving state
 				PORTH_OUT= 4;
-				robotStateVar=movingState();
+				robotStateVar=movingState(robotStateVar);
 				break;
 			default:
 				PORTH_OUT= 0;
