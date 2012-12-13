@@ -304,7 +304,7 @@ void enableSonar()
 	TIMERSONAR1_PER = 0xFFFF; //set the top of the period to max 16-bit value
 
 	TIMERSONAR1_INTCTRLA= 0x00; // turn other interrupts off
-	TIMERSONAR1_INTCTRLB= 0x03; //set capture interrupt to high
+	TIMERSONAR1_INTCTRLB= 0x01; //set capture interrupt to low
 
 
 	TIMERSONAR2_CTRLA = 0x05; //set clock source sysclk/64= 500KHz
@@ -314,7 +314,7 @@ void enableSonar()
 	TIMERSONAR2_PER = 0xFFFF; //set the top of the period to max 16-bit value
 	
 	TIMERSONAR2_INTCTRLA= 0x00; // turn other interrupts off
-	TIMERSONAR2_INTCTRLB= 0x03; //set capture interrupt to high
+	TIMERSONAR2_INTCTRLB= 0x01; //set capture interrupt to low
 
 	// set pin 1 direction to output
 	SONAR1ENABLE_DIR |= 0b00000010; // 0x02;
