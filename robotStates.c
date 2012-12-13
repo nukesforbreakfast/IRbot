@@ -441,12 +441,11 @@ void scanState(returnPackage* localStatePackage)
 				degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
 				degreeSideVar = 0; //this indicates this will be degreeVar degrees to the left.
 			}
-
-			//need to do something with this value and motors here.
-			//temporary code below:
-			PORTH_OUT = degreeVar;
-			PORTH_OUT |= degreeSideVar << 7;
-
+			
+			
+			/**************************************************
+			*Set the returnPackage values as appropriate here *
+			**************************************************/
 			localStatePackage->rotateQuantity = degreeVar; //give the degrees we need to turn
 
 			if(degreeSideVar) //if we need to turn right
@@ -459,7 +458,27 @@ void scanState(returnPackage* localStatePackage)
 			}
 
 			localStatePackage->prevState = 1; //indicate we were in the scan state
-			localStatePackage->nextState = 2; //we need to go to rotate state
+			/******************************************************
+			* Test to see if the servo degree is close to 0 AND	  *
+			* that both sonars are saying there is an obstacle in *
+			* our path. This could indicate we found the object.  *
+			******************************************************/
+			if(degreeVar < 10) //if degree's to turn is less than 10 degrees
+			{
+				if(sonarFlag1 && sonarFlag2)//check to see if both sonars are detecting an obstacle.
+				{
+					localStatePackage->nextState = 4; //we need to signal that we need to go into the final state
+				}
+				else
+				{
+					localStatePackage->nextState = 2; //we need to go to rotate state
+				}
+			}
+			else
+			{
+				localStatePackage->nextState = 2; //we need to go to rotate state
+			}
+			
 
 			keepLooping = 0; //false, exit the loop
 			break;
@@ -470,9 +489,10 @@ void scanState(returnPackage* localStatePackage)
 			keepLooping = 0; //false, exit the loop
 			break;
 
-			default: //oh shit what the fucks
+			default: //uh ohes, bad things have happened
+			PORTH_OUT = 0x85;
 			break;
-		}
+		}		
 	}
 	/***************************************
 	* Cleanup used timers and other things *
