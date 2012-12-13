@@ -84,6 +84,15 @@ void movingState(returnPackage* localStateVar)
 
 	MOTORDIR_OUT &= STOPMOVING_AND;
 
+    /*
+	if( == 1 && haltflag == 1)
+	{
+	    localStateVar->nextState= 1;
+	}
+	else
+	{
+	*/
+
 	switch(haltFlag)
 	{
 		case 1:
@@ -111,6 +120,8 @@ void movingState(returnPackage* localStateVar)
 		default:
 			break;
 	}
+
+	//}
 	
 	
 	localStateVar->prevState= 3;
@@ -125,16 +136,12 @@ void movingState(returnPackage* localStateVar)
 //**************************************************************************************************
 void rotateState(returnPackage* localStateVar)
 {
-	//unsigned char rotateFlag= 0;
-	//unsigned char object= 0;
-	//unsigned char objectGone= 0;
 	stopRotateTimerFlag= 0;
-	//stopRotateSonarFlag1= 0;
-	//stopRotateSonarFlag2= 0;
-	//unsigned long accum= 0;
 
 	setupMotors();
 	//enableSonar();
+
+	unsigned char degreesToTime= localStateVar.rotateQuantity/9;
 
 
 	switch(localStateVar->direction)
@@ -166,7 +173,7 @@ void rotateState(returnPackage* localStateVar)
 	if (localStateVar->rotateQuantity <= 0)
 	{
 		enableSonar();
-		
+
 		switch(localStateVar->direction)
 		{
 			case 'R':
@@ -176,7 +183,7 @@ void rotateState(returnPackage* localStateVar)
 				;
 			}
 			break;
-			
+
 			case 'L':
 			case 'l':
 			while(stopRotateSonarFlag2 == 0)
@@ -184,7 +191,7 @@ void rotateState(returnPackage* localStateVar)
 				;
 			}
 			break;
-			
+
 			default:
 			break;
 		}
@@ -192,45 +199,31 @@ void rotateState(returnPackage* localStateVar)
 		SONAR1ENABLE_OUT &= 0b11111101;
 		SONAR2ENABLE_OUT &= 0b11110111;
 	}
-	else
+	else // rotation quantity triggered
 	{
-		
-		
+
+
 		TCD0_CTRLB= 0;
 		TCD0_CTRLD= 0;
 		TCD0_CTRLE= 0;
-		TCD0_PER= 3125;
-		
+		TCD0_PER= 1563; // test this new timer period !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 		//set overflow interrupt to medium
 		TCD0_INTCTRLA= 0x02;
-		
+
 		//set compare interrupts off
 		TCD0_INTCTRLB= 0x00;
-		
+
 		TCD0_CTRLA= 0x07;
-		
-		//RTC_CTRL= 0x00; //turn off RTC
-		
-		//setRTC(localStateVar->rotateQuantity);
-		//RTC_PER= 2000;
-		
-		//RTC_COMP= 500;
 
-		//CLK_RTCCTRL=0b00000101;
 
-		//RTC_INTCTRL= 0x08; //set compare interrupt priority to med
-
-		//RTC_CTRL= 0x01; //set clock prescaler to one
-		
 		//after while loop
-		while(stopRotateTimerFlag < 11)
+		while(stopRotateTimerFlag < degreesToTime)
 		{
 			;
 		}
-		
+
 		localStateVar->nextState= 1;
-		//RTC_CTRL= 0x00;
-		//RTC_CNT= 0;
 		TCD0_CTRLA= 0;
 		TCD0_CNT= 0;
 	}

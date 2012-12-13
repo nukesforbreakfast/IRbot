@@ -77,13 +77,13 @@ ISR(TIMERSONAR2_CCA_vect)
 	{
 		case 2://rotate state
 		case 3://moving state
-			if(compareRegistervalue <= 200)
+			if(compareRegistervalue <= 150)
 			{
 				sonarFlag2= 4;
 				stopRotateSonarFlag2= 0;
 
 			}
-			else if(compareRegistervalue > 400)
+			else if(compareRegistervalue > 300)
 			{
 				sonarFlag2= 0;
 				stopRotateSonarFlag2= 4;
