@@ -356,6 +356,9 @@ int main(void)
 				PORTH_OUT= 4;
 				movingState(&robotStateVar);
 				break;
+			case 4: //final state
+				//do something here n00b!
+				break;
 			default:
 				PORTH_OUT= 0;
 				robotStateVar.nextState= 0;
