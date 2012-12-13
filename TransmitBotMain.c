@@ -7,8 +7,8 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/AVRXlib/AVRX_Clocks.h>
-#include <avr/AVRXlib/AVRX_Serial.h>
+#include <avr/AVRX_Clocks.h>
+#include <avr/AVRX_Serial.h>
 #include <stdlib.h>
 
 volatile int accum = 0;
