@@ -8,9 +8,6 @@
 #include <avr/AVRX_Serial.h>
 #include "robotStates.h"
 
-//int direction = 0; //does this break?
-int jose = 0;
-
 //used for storing CCX register values
 volatile unsigned int compareRegistervalue= 0;
 
