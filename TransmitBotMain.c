@@ -7,15 +7,12 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/AVRX_Clocks.h>
-#include <avr/AVRX_Serial.h>
-#include <stdlib.h>
 
 volatile int accum = 0;
 
 ISR(TCC0_CCA_vect)
 {
-	if(accum == 24)
+	if(accum == 24) //this should be 24
 	{
 		TCC0_CTRLA = TC_CLKSEL_OFF_gc;
 		TCC1_CTRLA = TC_CLKSEL_DIV64_gc;
@@ -80,6 +77,8 @@ void main(void)
 	* PORT C setup
 	*/
 	PORTC_DIR = 0xFF;
+	
+	sei(); //turn on the god damn interrupts you failbad
 	
 	while (1)
 	{
