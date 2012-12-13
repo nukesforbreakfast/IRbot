@@ -388,11 +388,11 @@ void scanState(returnPackage* localStatePackage)
 	* IR input port configuration
 	*/
 	IR_INPUT_PORT.DIR = 0x00; //all pins as input
-	IR_INPUT_PORT.PIN0CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
+	IR_INPUT_PORT.PIN2CTRL = 0x40; //set pin 2 to detect a rising and falling edges and invert the input to allow for pulse-width capture
 	/*
 	* Event System Configuration
 	*/
-	EVSYS_CH0MUX = EVSYS_CHMUX_PORTC_PIN0_gc; //set the event system to send events generated from PortC pin 2 to channel 0
+	EVSYS_CH0MUX = EVSYS_CHMUX_PORTD_PIN2_gc; //set the event system to send events generated from PortC pin 2 to channel 0
 	EVSYS_CH0CTRL = 0x00; //turn off sample filtering
 	
 	/****************************************
