@@ -29,105 +29,90 @@ void movingState(returnPackage* localStateVar)
 	setupMotors();
 	enableSonar();
 
-
-	//RTC_CTRL= 0x00; //turn off RTC
-		
-	//setRTC(localStateVar->rotateQuantity);
-	//RTC_PER= 2000;
-		
-	//RTC_COMP= 500;
-
-	//CLK_RTCCTRL=0b00000101;
-
-	//RTC_INTCTRL= 0x02; //set compare interrupt priority to med
-
-	//RTC_CTRL= 0x01; //set clock prescaler to one
-
     PWMTIMER_CC1= 10000;
     PWMTIMER_CC2= 10000;
 
 	TCD0_CTRLB= 0;
 	TCD0_CTRLD= 0;
 	TCD0_CTRLE= 0;
-	TCD0_PER= 3125;
-	
+	/**************************************************************************************************
+	/**************************************************************************************************
+	/**************************************************************************************************
+	/**************************************************************************************************
+	Use TCD0_PER to control the number of timer overflows per second. At 3125 it overflows ~10 times
+	a second
+	**************************************************************************************************
+	**************************************************************************************************
+	**************************************************************************************************
+	*************************************************************************************************/
+	TCD0_PER= 3125; // for carrera-bot's motors
+    //TCD0_PER= 1700; // for retardo-bot's motors
+
+
 	//set overflow interrupt to medium
 	TCD0_INTCTRLA= 0x02;
-	
+
 	//set compare interrupts off
 	TCD0_INTCTRLB= 0x00;
 
 	// motors A, B will have full duty cycle
 
-	
+	// set clock prescaler to 1/1024 so clock is running at 31250 Hz
 	TCD0_CTRLA= 0x07;
 
 	while(haltFlag == 0)
 	{
-		
 		haltFlag= sonarFlag1 | sonarFlag2 | (timeOutFlag>> 6);
-		/*
-		accum++;
-		if(accum >= 24000000)
-		{
-			haltFlag |= 1;
-		}
-		*/
-
 	};
 
-	//RTC_CTRL= 0x00;
-    //RTC_CNT= 0;
 	TCD0_CTRLA= 0;
 	TCD0_CNT= 0;
-	
 
 	MOTORDIR_OUT &= STOPMOVING_AND;
 
-    /*
-	if( == 1 && haltflag == 1)
+
+	if( localStateVar->signalAcquiredFlag== 1 && haltflag == 1)
 	{
 	    localStateVar->nextState= 1;
 	}
 	else
 	{
-	*/
+		switch(haltFlag)
+		{
+			case 1:
+				//go to rotate right x degrees
+				localStateVar->nextState= 2;
+				localStateVar->direction= localStateVar->globalTimeoutDirection;
+				//localStateVar->direction= 'R';
+				localStateVar->rotateQuantity= 90;
+				break;
+			case 2:
+			case 3:
+				//go to rotate until no obstacle
+				localStateVar->direction= 'R';
+				localStateVar->nextState= 2;
+				localStateVar->rotateQuantity= 0;
+				break;
+			case 4:
+			case 5:
+			case 7:
+				//go to rotate until no obstacle
+				localStateVar->direction= 'L';
+				localStateVar->nextState= 2;
+				localStateVar->rotateQuantity= 0;
+				break;
+			default:
+				break;
+		}
 
-	switch(haltFlag)
-	{
-		case 1:
-			//go to rotate right x degrees
-			localStateVar->nextState= 2;
-			localStateVar->direction= localStateVar->globalTimeoutDirection;
-			//localStateVar->direction= 'R';
-			localStateVar->rotateQuantity= 500;
-			break;		
-		case 2:
-		case 3:
-			//go to rotate until no obstacle
-			localStateVar->direction= 'R';
-			localStateVar->nextState= 2;
-			localStateVar->rotateQuantity= 0;
-			break;
-		case 4:
-		case 5:
-		case 7:
-			//go to rotate until no obstacle
-			localStateVar->direction= 'L';
-			localStateVar->nextState= 2;
-			localStateVar->rotateQuantity= 0;
-			break;
-		default:
-			break;
 	}
 
-	//}
-	
-	
+
 	localStateVar->prevState= 3;
 	SONAR1ENABLE_OUT &= 0b11111101;
 	SONAR2ENABLE_OUT &= 0b11110111;
 }
+
 
 
 
@@ -141,8 +126,20 @@ void rotateState(returnPackage* localStateVar)
 	setupMotors();
 	//enableSonar();
 
-	unsigned char degreesToTime= localStateVar.rotateQuantity/9;
+	/**************************************************************************************************
+	/**************************************************************************************************
+	/**************************************************************************************************
+	/**************************************************************************************************
+	90 degrees divided by the number of timer overflows per second gets the ratio that is stored in
+	degreesToTime. updating this number will automatically update maxNumberOfOverflows. A timer
+	period of 3125 means 10 overflows means  a ratio of 9
+	**************************************************************************************************
+	**************************************************************************************************
+	**************************************************************************************************
+	*************************************************************************************************/
+	unsigned char degreesToTime= 9;
 
+	unsigned char maxNumberOfOverflows= localStateVar->rotateQuantity/degreesToTime;
 
 	switch(localStateVar->direction)
 	{
@@ -206,7 +203,17 @@ void rotateState(returnPackage* localStateVar)
 		TCD0_CTRLB= 0;
 		TCD0_CTRLD= 0;
 		TCD0_CTRLE= 0;
-		TCD0_PER= 1563; // test this new timer period !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		/**************************************************************************************************
+		/**************************************************************************************************
+		/**************************************************************************************************
+		/**************************************************************************************************
+		Use TCD0_PER to control the number of timer overflows per second. At 3125 it overflows ~10 times
+		a second. Changing this value means maxNumberOfOverflows must also be recalibrated.
+		**************************************************************************************************
+		**************************************************************************************************
+		**************************************************************************************************
+		*************************************************************************************************/
+		TCD0_PER= 1563; // test this new timer period for roughly 20 overflows a second !!!!!!!!!!!!!!!!!!
 
 		//set overflow interrupt to medium
 		TCD0_INTCTRLA= 0x02;
@@ -216,9 +223,8 @@ void rotateState(returnPackage* localStateVar)
 
 		TCD0_CTRLA= 0x07;
 
-
-		//after while loop
-		while(stopRotateTimerFlag < degreesToTime)
+		//function while loop. PLEASE MAKE SURE maxNumberOfOverflows IS UP TO DATE
+		while(stopRotateTimerFlag < maxNumberOfOverflows)
 		{
 			;
 		}
@@ -235,6 +241,7 @@ void rotateState(returnPackage* localStateVar)
 	localStateVar->rotateQuantity= 0;
 
 }
+
 
 
 
@@ -305,7 +312,7 @@ void enableSonar()
 	TIMERSONAR2_CTRLD = 0xCB; //set events to Pulse Width capture, no timer delay, and listen to event channel 1
 	TIMERSONAR2_CTRLE = 0x00; //turn off byte mode
 	TIMERSONAR2_PER = 0xFFFF; //set the top of the period to max 16-bit value
-	
+
 	TIMERSONAR2_INTCTRLA= 0x00; // turn other interrupts off
 	TIMERSONAR2_INTCTRLB= 0x01; //set capture interrupt to low
 
@@ -387,7 +394,7 @@ void scanState(returnPackage* localStatePackage)
 	*/
 	EVSYS_CH0MUX = EVSYS_CHMUX_PORTD_PIN2_gc; //set the event system to send events generated from PortC pin 2 to channel 0
 	EVSYS_CH0CTRL = 0x00; //turn off sample filtering
-	
+
 	/****************************************
 	* Setup for pulse width capture timeout *
 	****************************************/
@@ -409,7 +416,7 @@ void scanState(returnPackage* localStatePackage)
 		{
 			case 0: //we are still scanning
 			break;
-			
+
 			case 1: //we got a pulse, now check for consistency
 			break;
 
@@ -434,8 +441,8 @@ void scanState(returnPackage* localStatePackage)
 				degreeVar /= 10; //this will give us a value in degrees as 10 microseconds = 1 degree
 				degreeSideVar = 0; //this indicates this will be degreeVar degrees to the left.
 			}
-			
-			
+
+
 			/**************************************************
 			*Set the returnPackage values as appropriate here *
 			**************************************************/
@@ -449,7 +456,7 @@ void scanState(returnPackage* localStatePackage)
 			{
 				localStatePackage->direction = 'L'; //set direction to left
 			}
-			
+
 			localStatePackage->sinalAcquiredFlag = 1; //true we acquired a signal
 
 			localStatePackage->prevState = 1; //indicate we were in the scan state
@@ -473,7 +480,7 @@ void scanState(returnPackage* localStatePackage)
 			{
 				localStatePackage->nextState = 2; //we need to go to rotate state
 			}
-			
+
 
 			keepLooping = 0; //false, exit the loop
 			break;
@@ -488,7 +495,7 @@ void scanState(returnPackage* localStatePackage)
 			default: //uh ohes, bad things have happened
 			PORTH_OUT = 0x85;
 			break;
-		}		
+		}
 	}
 	/***************************************
 	* Cleanup used timers and other things *

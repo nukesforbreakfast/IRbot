@@ -92,7 +92,7 @@ ISR(TIMERSONAR2_CCA_vect)
 		default:
 			//return;
 			break;
-	}		
+	}
 }
 
 
@@ -109,94 +109,7 @@ ISR(TCD0_OVF_vect)
 		default:
 		//return;
 		break;
-	}	
-}
-
-
-/*
-
-ISR(RTC_OVF_vect)
-{
-	if(robotStateVar.nextState == 3)
-	{
-		timeOutFlag= 1;
 	}
-}
-
-
-ISR(RTC_COMP_vect)
-{
-	if(robotStateVar.nextState == 2)
-	{
-		stopRotateTimerFlag= 1;
-	}
-	
-	
-	switch(robotStateVar.nextState)
-	{
-	    case 2://rotate state
-            stopRotateTimerFlag= 1;
-            break;
-	    case 3://moving state
-            timeOutFlag= 1;
-            break;
-        default:
-			//return;
-            break;
-	}
-	
-}
-*/
-
-
-ISR(PORTJ_INT0_vect)
-{
-
-	/*int pushbutton= PORTJ_IN;
-	switch(pushbutton)
-	{
-		case 1:
-			//PORTH_OUT= RTC_CNT;
-			//break;
-		case 2:
-			//PORTH_OUT= 0;
-			//break;
-		case 4:
-			PORTH_OUT= MOTORDIR_OUT;
-			break;
-		case 8:
-			//robotStateVar.nextState= 1;
-			//break;
-		default:
-			PORTH_OUT= 0;
-			break;
-	}*/
-}
-
-ISR(PORTJ_INT1_vect)
-{
-
-	/*
-	int pushbutton= PORTJ_IN;
-	switch(pushbutton)
-	{
-		case 16:
-
-			break;
-		case 32:
-
-			break;
-		case 64:
-
-			break;
-		case 128:
-			break;
-		default:
-			break;
-	}
-	PORTH_OUT= 0;
-	*/
-	;
 }
 
 /*
@@ -295,7 +208,7 @@ ISR(PW_TIMEOUT_OVF_VECT)
 		pulses = 0; //reset pulses
 		scanVar = 3; //indicate we did not get a consistent sequence of pulses
 		break;
-		
+
 		default: //any other state
 		break;
 	}
@@ -311,22 +224,6 @@ int main(void)
 
 	PMIC_CTRL = PMIC_HILVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm; //set PMIC to on.
 
-
-	/*
-    PORTJ_DIR= 0x00;
-    PORTJ_INTCTRL= 0x00; // pushbuttons interrupts low
-    PORTJ_INT0MASK= 0xFF;
-    PORTJ_INT1MASK= 0x00;
-
-    //PORTJ_PIN0CTRL= 0x01;
-    PORTJ_PIN1CTRL= 0x01;
-    PORTJ_PIN2CTRL= 0x01;
-    PORTJ_PIN3CTRL= 0x01;
-    PORTJ_PIN4CTRL= 0x01;
-    PORTJ_PIN5CTRL= 0x01;
-    PORTJ_PIN6CTRL= 0x01;
-    PORTJ_PIN7CTRL= 0x01;
-    */
 
     PORTH_DIR= 0xFF;
     PORTH_OUT= 0x00;

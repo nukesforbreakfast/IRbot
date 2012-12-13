@@ -98,7 +98,7 @@ typedef struct
 	char direction;
 	char globalTimeoutDirection;
 	unsigned int rotateQuantity;
-	uint8_t sinalAcquiredFlag;
+	unsigned char signalAcquiredFlag; // changed from uint8_t and  (learn to spell n00b)==>sinalAcquiredFlag
 }returnPackage;
 
 
