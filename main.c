@@ -293,6 +293,7 @@ ISR(PW_TIMEOUT_OVF_VECT)
 	switch(robotStateVar.nextState)
 	{
 		case 1: //we are in scan state
+		IR_PW_CAPTURE.CTRLA = TC_CLKSEL_OFF_gc; //turn off the pulse width capture
 		PW_TIMEOUT.CTRLA = TC_CLKSEL_OFF_gc; //turn the timeout counter off
 		pulses = 0; //reset pulses
 		scanVar = 3; //indicate we did not get a consistent sequence of pulses
