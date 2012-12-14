@@ -11,6 +11,9 @@
 //used for storing CCX register values
 volatile unsigned int compareRegistervalue= 0;
 
+
+volatile unsigned int compareRegistervalue2= 0;
+
 // used in RTC ISR and moving state. 0=move, 2=stop
 volatile unsigned char timeOutFlag= 0;
 
@@ -44,19 +47,20 @@ volatile int pulses = 0; //uses to count how many correct pulses we have recieve
 
 ISR(TIMERSONAR1_CCA_vect)
 {
+	//volatile unsigned int compareRegistervalue1= TIMERSONAR1_CCA;
 	compareRegistervalue= TIMERSONAR1_CCA;
 
 	switch(robotStateVar.nextState)
 	{
 		case 2://rotate state
 		case 3://moving state
-			if(compareRegistervalue <= 870)
+			if(compareRegistervalue <= 870) // 870
 			{
 				sonarFlag1= 2;
 				stopRotateSonarFlag1= 0;
 
 			}
-			else if(compareRegistervalue > 1740)
+			else if(compareRegistervalue > 1740) // 1740
 			{
 				sonarFlag1= 0;
 				stopRotateSonarFlag1= 2;
@@ -71,19 +75,21 @@ ISR(TIMERSONAR1_CCA_vect)
 
 ISR(TIMERSONAR2_CCA_vect)
 {
-	compareRegistervalue= TIMERSONAR2_CCA;
+	//volatile unsigned int compareRegistervalue2= TIMERSONAR2_CCA;
+	compareRegistervalue2 = TIMERSONAR2_CCA;
+	
 
 	switch(robotStateVar.nextState)
 	{
 		case 2://rotate state
 		case 3://moving state
-			if(compareRegistervalue <= 150)
+			if(compareRegistervalue2 <= 200) // 150
 			{
 				sonarFlag2= 4;
 				stopRotateSonarFlag2= 0;
 
 			}
-			else if(compareRegistervalue > 300)
+			else if(compareRegistervalue2 > 300) // 300
 			{
 				sonarFlag2= 0;
 				stopRotateSonarFlag2= 4;
@@ -147,7 +153,7 @@ ISR(SERVO_PWM_OVF_VECT)
 			}
 		}
 
-		if(swivels > 1)
+		if(swivels > 0)
 		{
 			scanVar = 3; //we got no signal, indicate to the function as such
 			swivels = 0; //reset swivels

@@ -63,7 +63,7 @@ void movingState(returnPackage* localStateVar)
 	while(haltFlag == 0)
 	{
 		haltFlag= sonarFlag1 | sonarFlag2 | (timeOutFlag>> 6);
-	};
+	}
 
 	TCD0_CTRLA= 0;
 	TCD0_CNT= 0;
@@ -88,6 +88,7 @@ void movingState(returnPackage* localStateVar)
 				break;
 			case 2:
 			case 3:
+			case 7:
 				//go to rotate until no obstacle
 				localStateVar->direction= 'R';
 				localStateVar->nextState= 2;
@@ -95,7 +96,7 @@ void movingState(returnPackage* localStateVar)
 				break;
 			case 4:
 			case 5:
-			case 7:
+			//case 7:
 				//go to rotate until no obstacle
 				localStateVar->direction= 'L';
 				localStateVar->nextState= 2;
@@ -106,7 +107,6 @@ void movingState(returnPackage* localStateVar)
 		}
 
 	}
-
 
 	localStateVar->prevState= 3;
 	SONAR1ENABLE_OUT &= 0b11111101;
@@ -304,7 +304,7 @@ void enableSonar()
 	TIMERSONAR1_PER = 0xFFFF; //set the top of the period to max 16-bit value
 
 	TIMERSONAR1_INTCTRLA= 0x00; // turn other interrupts off
-	TIMERSONAR1_INTCTRLB= 0x01; //set capture interrupt to low
+	TIMERSONAR1_INTCTRLB= 0x02; //set capture interrupt to high
 
 
 	TIMERSONAR2_CTRLA = 0x05; //set clock source sysclk/64= 500KHz
@@ -314,7 +314,7 @@ void enableSonar()
 	TIMERSONAR2_PER = 0xFFFF; //set the top of the period to max 16-bit value
 
 	TIMERSONAR2_INTCTRLA= 0x00; // turn other interrupts off
-	TIMERSONAR2_INTCTRLB= 0x01; //set capture interrupt to low
+	TIMERSONAR2_INTCTRLB= 0x02; //set capture interrupt to high
 
 	// set pin 1 direction to output
 	SONAR1ENABLE_DIR |= 0b00000010; // 0x02;
