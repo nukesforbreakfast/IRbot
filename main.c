@@ -178,7 +178,7 @@ ISR(IR_PW_CAPTURE_VECT)
 			PW_TIMEOUT.CTRLA = TC_CLKSEL_DIV1024_gc; //turn on the timeout timer running at sysclk/1024 = 31.250Khz
 		}
 		scanVar = 1; //indicate we got a pulse and need to verify consistency
-		if(SERVO_PWM.CCA > 500 && SERVO_PWM.CCA < 700) //if the pulse width is within the expected width
+		if(IR_PW_CAPTURE.CCA > 500 && IR_PW_CAPTURE.CCA < 700) //if the pulse width is within the expected width
 		{
 			++pulses;
 			if(pulses > 9) //if we have gotten 10 consistent pulses;
@@ -227,6 +227,12 @@ int main(void)
 
     PORTH_DIR= 0xFF;
     PORTH_OUT= 0x00;
+	
+	/*
+	* Port Q configuration for accessing Serial Via USB using USARTD0, analog stuff on PORTB, etc...
+	*/
+	PORTQ_DIR = 0x0F; //port q lower 3 bits control access to usb and other stuff so get access with these two lines
+	PORTQ_OUT = 0x00; //turn off all portq stuff.
 
 	sei(); //enable interrupt system
 

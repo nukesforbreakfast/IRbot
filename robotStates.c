@@ -71,7 +71,7 @@ void movingState(returnPackage* localStateVar)
 	MOTORDIR_OUT &= STOPMOVING_AND;
 
 
-	if( localStateVar->signalAcquiredFlag== 1 && haltflag == 1)
+	if( localStateVar->signalAcquiredFlag== 1 && haltFlag == 1)
 	{
 	    localStateVar->nextState= 1;
 	}
@@ -457,7 +457,7 @@ void scanState(returnPackage* localStatePackage)
 				localStatePackage->direction = 'L'; //set direction to left
 			}
 
-			localStatePackage->sinalAcquiredFlag = 1; //true we acquired a signal
+			localStatePackage->signalAcquiredFlag = 1; //true we acquired a signal
 
 			localStatePackage->prevState = 1; //indicate we were in the scan state
 			/******************************************************
@@ -488,7 +488,7 @@ void scanState(returnPackage* localStatePackage)
 			case 3: //we have finished scanning and have received no pulses
 			localStatePackage->prevState = 1; //indicate we were in the scan state
 			localStatePackage->nextState = 3; //we need to go to move state
-			localStatePackage->sinalAcquiredFlag = 0; //false we did not acquire any signal
+			localStatePackage->signalAcquiredFlag = 0; //false we did not acquire any signal
 			keepLooping = 0; //false, exit the loop
 			break;
 
