@@ -2,7 +2,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/AVRX_Clocks.h>
-#include <avr/AVRX_Serial.h>
 #include "robotStates.h"
 
 //**************************************************************************************************
