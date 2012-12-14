@@ -156,6 +156,7 @@ ISR(SERVO_PWM_OVF_VECT)
 		{
 			scanVar = 3; //we got no signal, indicate to the function as such
 			swivels = 0; //reset swivels
+			SERVO_PWM.CTRLA = TC_CLKSEL_OFF_gc;
 		}
 		break;
 
@@ -176,7 +177,9 @@ ISR(IR_PW_CAPTURE_VECT)
 	{
 		case 1: //we are in scanState
 		
-		if(IR_PW_CAPTURE.CCA > 500 && IR_PW_CAPTURE.CCA < 700) //if the pulse width is within the expected width
+		PORTH_OUT = IR_PW_CAPTURE.CCA/10;
+		
+		if(IR_PW_CAPTURE.CCA > 350 && IR_PW_CAPTURE.CCA < 450) //if the pulse width is within the expected width
 		{
 			if(pulses == 0) //if this if the first pulse
 			{
@@ -192,6 +195,8 @@ ISR(IR_PW_CAPTURE_VECT)
 			{
 				scanVar = 2;
 				pulses = 0; //reset pulses
+				IR_PW_CAPTURE.CTRLA = TC_CLKSEL_OFF_gc; //turn off the pulse width capture
+				PW_TIMEOUT.CTRLA = TC_CLKSEL_OFF_gc; //turn the timeout counter off
 			}
 		}
 		break;
@@ -265,6 +270,7 @@ int main(void)
 				break;
 			case 4: //final state
 				//do something here n00b!
+				PORTH_OUT = 0xAA;
 				break;
 			default:
 				PORTH_OUT= 0;

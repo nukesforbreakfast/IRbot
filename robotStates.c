@@ -61,7 +61,7 @@ void movingState(returnPackage* localStateVar)
 
 	while(haltFlag == 0)
 	{
-		haltFlag= sonarFlag1 | sonarFlag2 | (timeOutFlag>> 6);
+		haltFlag= sonarFlag1 | sonarFlag2 | (timeOutFlag>> 5);
 	}
 
 	TCD0_CTRLA= 0;
@@ -464,7 +464,7 @@ void scanState(returnPackage* localStatePackage)
 			* that both sonars are saying there is an obstacle in *
 			* our path. This could indicate we found the object.  *
 			******************************************************/
-			if(degreeVar < 10) //if degree's to turn is less than 10 degrees
+			if(degreeVar < 31) //if degree's to turn is less than 10 degrees
 			{
 				if(sonarFlag1 && sonarFlag2)//check to see if both sonars are detecting an obstacle.
 				{
@@ -492,7 +492,7 @@ void scanState(returnPackage* localStatePackage)
 			break;
 
 			default: //uh ohes, bad things have happened
-			PORTH_OUT = 0x85;
+			PORTH_OUT = 0x55;
 			break;
 		}
 	}
