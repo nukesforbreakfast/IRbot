@@ -101,7 +101,7 @@ typedef struct
 }returnPackage;
 
 
-void setRTC(int);
+//void setRTC(int);
 
 void enableSonar();
 

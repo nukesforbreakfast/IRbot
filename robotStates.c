@@ -18,6 +18,8 @@ void movingState(returnPackage* localStateVar)
 {
 	//returnPackage localStateVar;
 
+	//static unsigned int storeCount;
+
 	unsigned char haltFlag= 0;
 	sonarFlag1= 0;
 	sonarFlag2= 0;
@@ -35,9 +37,9 @@ void movingState(returnPackage* localStateVar)
 	TCD0_CTRLD= 0;
 	TCD0_CTRLE= 0;
 	/**************************************************************************************************
-	/**************************************************************************************************
-	/**************************************************************************************************
-	/**************************************************************************************************
+	**************************************************************************************************
+	**************************************************************************************************
+	**************************************************************************************************
 	Use TCD0_PER to control the number of timer overflows per second. At 3125 it overflows ~10 times
 	a second
 	**************************************************************************************************
@@ -61,7 +63,7 @@ void movingState(returnPackage* localStateVar)
 
 	while(haltFlag == 0)
 	{
-		haltFlag= sonarFlag1 | sonarFlag2 | (timeOutFlag>> 5);
+		haltFlag= sonarFlag1 | sonarFlag2 | (timeOutFlag>> 6);
 	}
 
 	TCD0_CTRLA= 0;
@@ -79,6 +81,9 @@ void movingState(returnPackage* localStateVar)
 		switch(haltFlag)
 		{
 			case 1:
+			case 3:
+			case 5:
+			case 7:
 				//go to rotate right x degrees
 				localStateVar->nextState= 2;
 				localStateVar->direction= localStateVar->globalTimeoutDirection;
@@ -86,15 +91,16 @@ void movingState(returnPackage* localStateVar)
 				localStateVar->rotateQuantity= 90;
 				break;
 			case 2:
-			case 3:
-			case 7:
+			case 6:
+			//case 3:
+			//case 7:
 				//go to rotate until no obstacle
 				localStateVar->direction= 'R';
 				localStateVar->nextState= 2;
 				localStateVar->rotateQuantity= 0;
 				break;
 			case 4:
-			case 5:
+			//case 5:
 			//case 7:
 				//go to rotate until no obstacle
 				localStateVar->direction= 'L';
@@ -109,7 +115,7 @@ void movingState(returnPackage* localStateVar)
 
 	localStateVar->prevState= 3;
 	SONAR1ENABLE_OUT &= 0b11111101;
-	SONAR2ENABLE_OUT &= 0b11110111;
+	SONAR2ENABLE_OUT &= 0b11011111;
 }
 
 
@@ -126,9 +132,9 @@ void rotateState(returnPackage* localStateVar)
 	//enableSonar();
 
 	/**************************************************************************************************
-	/**************************************************************************************************
-	/**************************************************************************************************
-	/**************************************************************************************************
+	**************************************************************************************************
+	**************************************************************************************************
+	**************************************************************************************************
 	90 degrees divided by the number of timer overflows per second gets the ratio that is stored in
 	degreesToTime. updating this number will automatically update maxNumberOfOverflows. A timer
 	period of 3125 means 10 overflows means  a ratio of 9
@@ -136,7 +142,7 @@ void rotateState(returnPackage* localStateVar)
 	**************************************************************************************************
 	**************************************************************************************************
 	*************************************************************************************************/
-	unsigned char degreesToTime= 9;
+	unsigned char degreesToTime= 18;
 
 	unsigned char maxNumberOfOverflows= localStateVar->rotateQuantity/degreesToTime;
 
@@ -193,7 +199,7 @@ void rotateState(returnPackage* localStateVar)
 		}
 		localStateVar->nextState= 3;
 		SONAR1ENABLE_OUT &= 0b11111101;
-		SONAR2ENABLE_OUT &= 0b11110111;
+		SONAR2ENABLE_OUT &= 0b11011111;
 	}
 	else // rotation quantity triggered
 	{
@@ -203,9 +209,9 @@ void rotateState(returnPackage* localStateVar)
 		TCD0_CTRLD= 0;
 		TCD0_CTRLE= 0;
 		/**************************************************************************************************
-		/**************************************************************************************************
-		/**************************************************************************************************
-		/**************************************************************************************************
+		**************************************************************************************************
+		**************************************************************************************************
+		**************************************************************************************************
 		Use TCD0_PER to control the number of timer overflows per second. At 3125 it overflows ~10 times
 		a second. Changing this value means maxNumberOfOverflows must also be recalibrated.
 		**************************************************************************************************
@@ -287,7 +293,7 @@ void enableSonar()
 	SONAR1OUTPORT_DIR &= 0b11111110; //0xFE
 	SONAR1OUTPORT_PINCTRL= 0x00; // set input sense to both edges
 
-	SONAR2OUTPORT_DIR &= 0b11101111; //0xFB
+	SONAR2OUTPORT_DIR &= 0b11101111; //0xEF
 	SONAR2OUTPORT_PINCTRL= 0x00; // set input sense to both edges
 
 	EVSYS_CH1MUX= 0x78;//0b01100010 set event channel 1 to portf pin 0
@@ -319,13 +325,13 @@ void enableSonar()
 	SONAR1ENABLE_DIR |= 0b00000010; // 0x02;
 
 	// set pin 3 direction to output
-	SONAR2ENABLE_DIR |= 0b00001000; // 0x08;
+	SONAR2ENABLE_DIR |= 0b00100000; // 0x20;
 
 	// set pin 1 high
 	SONAR1ENABLE_OUT |= 0b00000010; // 0x02;
 
 	// set pin 3 high
-	SONAR2ENABLE_OUT |= 0b00001000; // 0x08;
+	SONAR2ENABLE_OUT |= 0b00100000; // 0x10;
 
 }
 
@@ -337,6 +343,8 @@ void enableSonar()
 // SONARENABLE = PORTC pin 3
 // SONAROUTPORT = PORTC pin 2
 //**************************************************************************************************
+
+/*
 void setRTC(int topValue)
 {
 	RTC_PER= topValue; // should be roughly x milliseconds
@@ -349,6 +357,7 @@ void setRTC(int topValue)
 
 	RTC_CNT= 0;
 }
+*/
 
 void scanState(returnPackage* localStatePackage)
 {
